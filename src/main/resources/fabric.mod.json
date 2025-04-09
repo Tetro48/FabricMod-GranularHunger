@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "granular_hunger",
+	"version": "${version}",
+	"name": "Granular Hunger",
+	"description": "This mod changes the entire hunger system to be more like the one from Better Than Wolves.",
+	"authors": [
+		"Tetro48"
+	],
+	"contact": {
+		"sources": "https://github.com/Tetro48/FabricMod-GranularHunger"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/granular-hunger/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"tetro48.system.GranularHunger"
+		],
+		"client": [
+			"tetro48.system.GranularHungerClient"
+		]
+	},
+	"mixins": [
+		"granular-hunger.mixins.json",
+		{
+			"config": "granular-hunger.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.16.9",
+		"minecraft": ">=1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"required": true,
+	"package": "tetro48.system.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"HungerManagerMixin",
+		"PlayerEntityMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
