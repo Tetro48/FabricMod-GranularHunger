@@ -3,7 +3,7 @@
 	"id": "granular_hunger",
 	"version": "${version}",
 	"name": "Granular Hunger",
-	"description": "This mod changes the entire hunger system to be more like the one from Better Than Wolves.",
+	"description": "This mod changes the entire hunger system to be more granular, and ports some features from BTW's Hardcore Hunger.",
 	"authors": [
 		"Tetro48"
 	],
