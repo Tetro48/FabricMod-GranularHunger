@@ -64,7 +64,7 @@ public abstract class InGameHudMixin {
         RenderSystem.enableBlend();
         for(int j = 0; j < 10; ++j) {
             int partialHungerPips = Math.min(6, iFoodLevel - j * 6);
-            int partialSaturationPips = (int) Math.min(8, (fSaturationLevel / 0.75f) - j * 8f);
+            int partialSaturationPips = (int) Math.min(8, ((fSaturationLevel + 0.124f) / 0.75f) - j * 8f);
             int k = top;
             Identifier identifier;
             Identifier identifier1;
@@ -86,78 +86,19 @@ public abstract class InGameHudMixin {
 
             int l = right - j * 8 - 9;
             context.drawGuiTexture(identifier, l, k, 9, 9);
-            if (j * 6 < fSaturationLevel) {
-                int pixelOffset = Math.max(0, partialSaturationPips) + 1;
-//                if (pixelOffset == 1) pixelOffset = 2;
-                if (pixelOffset == 7) pixelOffset = 6;
-
+            if (j * 6 < iSaturationPips) {
+                int pixelOffset = Math.max(0, partialSaturationPips);
                 context.drawGuiTexture(identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
             }
             if (j * 6 < iFoodLevel) {
                 int pixelOffset = Math.max(0, partialHungerPips) + 1;
                 if (pixelOffset == 1) pixelOffset = 2;
-//                if (pixelOffset == 7) pixelOffset = 6;
 
                 context.drawGuiTexture(identifier2, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
             }
         }
         RenderSystem.disableBlend();
         previousTime = Util.getMeasuringTimeNano();
-//        {
-//            int iShankScreenY = iScreenY;
-//            int iShankTextureOffsetX = 16;
-//            byte iBackgroundTextureOffsetX = 0;
-//
-//            if (player.isPotionActive(Potion.hunger)) {
-//
-//                iShankTextureOffsetX += 36;
-//                iBackgroundTextureOffsetX = 13;
-//            } else if (iTempCount < iSaturationPips >> 3) {
-//
-//                iBackgroundTextureOffsetX = 1;
-//            }
-//
-//            if (iHungerPenalty > 0 && this.updateCounter % (iFoodLevel * 5 + 1) == 0) {
-//
-//                iShankScreenY = iScreenY + this.rand.nextInt(3) - 1;
-//            } else if (this.foodBarShakeTimer > 0) {
-//
-//                int iShakeAmount = 1;
-//
-//                if (this.rand.nextInt(2) == 0) {
-//                    iShakeAmount = -iShakeAmount;
-//                }
-//
-//                iShankScreenY = iScreenY + iShakeAmount;
-//            }
-//
-//            int iShankScreenX = iScreenX - iTempCount * 8 - 9;
-//
-//            drawTexturedModalRect(iShankScreenX, iShankScreenY, 16 + iBackgroundTextureOffsetX * 9, 27, 9, 9);
-//
-//            if (iTempCount == iSaturationPips >> 3) {
-//                if (!player.isPotionActive(Potion.hunger)) {
-//
-//                    int iPartialPips = iSaturationPips % 8;
-//
-//                    if (iPartialPips != 0) {
-//
-//                        drawTexturedModalRect(iShankScreenX + 8 - iPartialPips, iShankScreenY, 33 - iPartialPips, 27, 1 + iPartialPips, 9);
-//                    }
-//                }
-//            }
-//
-//            {
-//                drawTexturedModalRect(iShankScreenX, iShankScreenY, iShankTextureOffsetX + 36, 27, 9, 9);
-//            }
-//            {
-//                int iPartialPips = iFoodLevel % 6;
-//
-//                if (iPartialPips != 0) {
-//                    drawTexturedModalRect(iShankScreenX + 7 - iPartialPips, iShankScreenY, iShankTextureOffsetX + 36 + 7 - iPartialPips, 27, 3 + iPartialPips, 9);
-//                }
-//            }
-//        }
     }
 
 }
