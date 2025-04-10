@@ -65,11 +65,14 @@ public abstract class HungerManagerMixin {
                 this.foodTickTimer = 0;
             }
         }
-        if (this.foodLevel == 0 && this.saturationLevel <= 0) {
+        else if (this.foodLevel == 0 && this.saturationLevel <= 0) {
             ++this.foodTickTimer;
             if (this.foodTickTimer >= 80) {
                 player.damage(player.getDamageSources().starve(), 1.0F);
             }
+        }
+        else {
+            this.foodTickTimer = 0;
         }
         ci.cancel();
     }
