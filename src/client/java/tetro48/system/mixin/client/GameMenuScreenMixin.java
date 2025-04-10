@@ -9,8 +9,8 @@ import tetro48.system.GranularHungerClient;
 
 @Mixin(GameMenuScreen.class)
 public abstract class GameMenuScreenMixin {
-    @Inject(method = "disconnect", at = @At("TAIL"))
-    private void resetClientExhaustion(CallbackInfo ci) {
-        GranularHungerClient.receivedExhaustionSinceLogin = false;
-    }
+	@Inject(method = "disconnect", at = @At("TAIL"))
+	private void resetClientExhaustion(CallbackInfo ci) {
+		GranularHungerClient.receivedExhaustionSinceLogin = false;
+	}
 }

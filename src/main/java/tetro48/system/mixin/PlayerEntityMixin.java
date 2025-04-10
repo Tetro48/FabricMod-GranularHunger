@@ -21,41 +21,41 @@ import tetro48.system.GranularHunger;
 
 @Mixin(PlayerEntity.class)
 public abstract class PlayerEntityMixin extends LivingEntity {
-    protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
-        super(entityType, world);
-    }
+	protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
+		super(entityType, world);
+	}
 
-    @Unique
-    private long remainingUnableToConsumeTicks;
+	@Unique
+	private long remainingUnableToConsumeTicks;
 
-    @Shadow public abstract void playSound(SoundEvent sound, float volume, float pitch);
+	@Shadow public abstract void playSound(SoundEvent sound, float volume, float pitch);
 
-    @Shadow protected HungerManager hungerManager;
+	@Shadow protected HungerManager hungerManager;
 
-    @Inject(method = "tick", at = @At("HEAD"))
-    private void tickCustom(CallbackInfo ci) {
-        remainingUnableToConsumeTicks--;
-    }
+	@Inject(method = "tick", at = @At("HEAD"))
+	private void tickCustom(CallbackInfo ci) {
+		remainingUnableToConsumeTicks--;
+	}
 
-    @Inject(method = "eatFood", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;eat(Lnet/minecraft/component/type/FoodComponent;)V", shift = At.Shift.AFTER))
-    private void onEatFood(World world, ItemStack stack, FoodComponent foodComponent, CallbackInfoReturnable<ItemStack> cir) {
-        int hungerPips = stack.getOrDefault(GranularHunger.HUNGER_PIP_COMPONENT, 0);
-        hungerManager.add(hungerPips, (float) foodComponent.nutrition() / foodComponent.saturation() / 2.0F);
-    }
-    @Inject(method = "canConsume", at = @At("RETURN"), cancellable = true)
-    private void modifyCanConsume(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
-        if (hasStatusEffect(StatusEffects.HUNGER)) {
-            if (remainingUnableToConsumeTicks <= 0) {
-                remainingUnableToConsumeTicks = 10;
-                this.playSound(SoundEvents.ENTITY_PLAYER_BURP, 0.25f, 0.8f + this.random.nextFloat() * 0.7f);
-            }
-            cir.setReturnValue(false);
-        }
-        if (!cir.getReturnValue()) {
-            if (remainingUnableToConsumeTicks <= 0) {
-                remainingUnableToConsumeTicks = 10;
-                this.playSound(SoundEvents.ENTITY_PLAYER_BURP, 0.25f, 0.8f + this.random.nextFloat() * 0.7f);
-            }
-        }
-    }
+	@Inject(method = "eatFood", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;eat(Lnet/minecraft/component/type/FoodComponent;)V", shift = At.Shift.AFTER))
+	private void onEatFood(World world, ItemStack stack, FoodComponent foodComponent, CallbackInfoReturnable<ItemStack> cir) {
+		int hungerPips = stack.getOrDefault(GranularHunger.HUNGER_PIP_COMPONENT, 0);
+		hungerManager.add(hungerPips, (float) foodComponent.nutrition() / foodComponent.saturation() / 2.0F);
+	}
+	@Inject(method = "canConsume", at = @At("RETURN"), cancellable = true)
+	private void modifyCanConsume(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
+		if (hasStatusEffect(StatusEffects.HUNGER)) {
+			if (remainingUnableToConsumeTicks <= 0) {
+				remainingUnableToConsumeTicks = 10;
+				this.playSound(SoundEvents.ENTITY_PLAYER_BURP, 0.25f, 0.8f + this.random.nextFloat() * 0.7f);
+			}
+			cir.setReturnValue(false);
+		}
+		if (!cir.getReturnValue()) {
+			if (remainingUnableToConsumeTicks <= 0) {
+				remainingUnableToConsumeTicks = 10;
+				this.playSound(SoundEvents.ENTITY_PLAYER_BURP, 0.25f, 0.8f + this.random.nextFloat() * 0.7f);
+			}
+		}
+	}
 }

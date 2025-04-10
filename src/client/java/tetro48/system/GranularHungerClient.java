@@ -17,7 +17,7 @@ public class GranularHungerClient implements ClientModInitializer {
 				if (receivedExhaustionSinceLogin)
 					foodBarShakeTimer += (float) Math.max(0, Math.pow(newExhaustion, 1.2d)) * 10;
 				else receivedExhaustionSinceLogin = true;
-            });
+			});
 		});
 	}
 }
