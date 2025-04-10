@@ -26,6 +26,8 @@ public abstract class InGameHudMixin {
     @Final
     @Shadow private static Identifier FOOD_FULL_TEXTURE;
 
+    @Unique private static final Identifier FOOD_FAT_OUTLINE = Identifier.of("granular-hunger","hud/food_fat_outline");
+
     @Final
     @Shadow
     private Random random;
@@ -51,7 +53,7 @@ public abstract class InGameHudMixin {
         HungerManager hungerManager = player.getHungerManager();
         int iFoodLevel = hungerManager.getFoodLevel();
         float fSaturationLevel = hungerManager.getSaturationLevel();
-        int iSaturationPips = (int) ((hungerManager.getSaturationLevel() + 0.124F) * 4.0F);
+        int iSaturationPips = (int) ((hungerManager.getSaturationLevel() + 0.124F));
 
         int iFullHungerPips = iFoodLevel / 2;
 
@@ -62,24 +64,35 @@ public abstract class InGameHudMixin {
         RenderSystem.enableBlend();
         for(int j = 0; j < 10; ++j) {
             int partialHungerPips = Math.min(6, iFoodLevel - j * 6);
+            int partialSaturationPips = (int) Math.min(8, (fSaturationLevel / 0.75f) - j * 8f);
             int k = top;
             Identifier identifier;
+            Identifier identifier1;
             Identifier identifier2;
             if (player.hasStatusEffect(StatusEffects.HUNGER)) {
                 identifier = FOOD_EMPTY_HUNGER_TEXTURE;
+                identifier1 = FOOD_FAT_OUTLINE;
                 identifier2 = FOOD_FULL_HUNGER_TEXTURE;
 //                foodBarShakeTimer = 1f/3f;
             } else {
                 identifier = FOOD_EMPTY_TEXTURE;
+                identifier1 = FOOD_FAT_OUTLINE;
                 identifier2 = FOOD_FULL_TEXTURE;
             }
 
-            if (foodBarShakeTimer > 0.001 || (fSaturationLevel <= 0.0F && this.ticks % (iFoodLevel + 1) == 0)) {
+            if (foodBarShakeTimer > 0.001 || (this.ticks % (iFoodLevel + 1) == 0)) {
                 k = top + (this.random.nextInt(3) - 1);
             }
 
             int l = right - j * 8 - 9;
             context.drawGuiTexture(identifier, l, k, 9, 9);
+            if (j * 6 < fSaturationLevel) {
+                int pixelOffset = Math.max(0, partialSaturationPips) + 1;
+//                if (pixelOffset == 1) pixelOffset = 2;
+//                if (pixelOffset == 7) pixelOffset = 6;
+
+                context.drawGuiTexture(identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
+            }
             if (j * 6 < iFoodLevel) {
                 int pixelOffset = Math.max(0, partialHungerPips) + 1;
                 if (pixelOffset == 1) pixelOffset = 2;
