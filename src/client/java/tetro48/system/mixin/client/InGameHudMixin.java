@@ -74,7 +74,7 @@ public abstract class InGameHudMixin {
                 identifier2 = FOOD_FULL_TEXTURE;
             }
 
-            if (foodBarShakeTimer > 0.004 || (fSaturationLevel <= 0.0F && this.ticks % (iFoodLevel + 1) == 0)) {
+            if (foodBarShakeTimer > 0.001 || (fSaturationLevel <= 0.0F && this.ticks % (iFoodLevel + 1) == 0)) {
                 k = top + (this.random.nextInt(3) - 1);
             }
 
