@@ -1,7 +1,6 @@
 package tetro48.system.mixin.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.entity.effect.StatusEffects;
@@ -38,7 +37,6 @@ public abstract class InGameHudMixin {
 
     @Shadow @Final private static Identifier FOOD_FULL_HUNGER_TEXTURE;
 
-    @Shadow @Final private MinecraftClient client;
 
     @Unique
     private long previousTime;
@@ -54,8 +52,6 @@ public abstract class InGameHudMixin {
         int iFoodLevel = hungerManager.getFoodLevel();
         float fSaturationLevel = hungerManager.getSaturationLevel();
         int iSaturationPips = (int) ((hungerManager.getSaturationLevel() + 0.124F));
-
-        int iFullHungerPips = iFoodLevel / 2;
 
         float foodBarShakeTimer = GranularHungerClient.foodBarShakeTimer;
         if (GranularHungerClient.foodBarShakeTimer > 0) {
@@ -73,7 +69,6 @@ public abstract class InGameHudMixin {
                 identifier = FOOD_EMPTY_HUNGER_TEXTURE;
                 identifier1 = FOOD_FAT_OUTLINE;
                 identifier2 = FOOD_FULL_HUNGER_TEXTURE;
-//                foodBarShakeTimer = 1f/3f;
             } else {
                 identifier = FOOD_EMPTY_TEXTURE;
                 identifier1 = FOOD_FAT_OUTLINE;
