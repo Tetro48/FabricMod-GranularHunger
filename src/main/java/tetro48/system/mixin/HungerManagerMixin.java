@@ -31,6 +31,11 @@ public abstract class HungerManagerMixin {
     @Unique private static final float ONE_AND_ONE_THIRD = 4f/3f;
     @Unique private final float[] healTimeMultiplier = {0.4f, 0.6f, 1f, 1f};
 
+    @Inject(method = "<init>", at = @At("TAIL"))
+    private void onInit(CallbackInfo ci) {
+        saturationLevel = 0f;
+    }
+
     @Inject(method = "isNotFull", at = @At("RETURN"), cancellable = true)
     private void isNotFullUntil60(CallbackInfoReturnable<Boolean> cir) {
         cir.setReturnValue(this.foodLevel < 60);
@@ -104,13 +109,13 @@ public abstract class HungerManagerMixin {
     }
     @Inject(method = "addInternal", at = @At("HEAD"))
     private void modifySaturationGain(int nutrition, float saturation, CallbackInfo ci) {
+        if (nutrition <= 0) {
+            if (this.foodLevel < 60) saturationLevel -= saturation;
+            return;
+        }
         int excess = Math.max(this.foodLevel + nutrition - 60, 0);
         float saturationReduction = saturation * (nutrition-excess)/(float)nutrition;
-        //NaN check
-        if (Float.isNaN(saturationReduction)) saturationReduction = 0;
-        saturationLevel -= saturationReduction;
-        //more NaN check, just in case
-        if (Float.isNaN(saturationLevel)) saturationLevel = 0;
+        saturationLevel = Math.max(-saturationReduction, saturationLevel - saturationReduction);
     }
     @ModifyArg(method = "eat", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;addInternal(IF)V"), index = 0)
     private int multiplyNormalResFoodBy3X(int nutrition){
