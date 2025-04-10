@@ -65,6 +65,12 @@ public abstract class HungerManagerMixin {
                 this.foodTickTimer = 0;
             }
         }
+        if (this.foodLevel == 0 && this.saturationLevel <= 0) {
+            ++this.foodTickTimer;
+            if (this.foodTickTimer >= 80) {
+                player.damage(player.getDamageSources().starve(), 1.0F);
+            }
+        }
         ci.cancel();
     }
     @Inject(method = "readNbt", at = @At(value = "INVOKE", target = "Lnet/minecraft/nbt/NbtCompound;getInt(Ljava/lang/String;)I", ordinal = 0))
