@@ -40,7 +40,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 	@Inject(method = "eatFood", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;eat(Lnet/minecraft/component/type/FoodComponent;)V", shift = At.Shift.AFTER))
 	private void onEatFood(World world, ItemStack stack, FoodComponent foodComponent, CallbackInfoReturnable<ItemStack> cir) {
 		int hungerPips = stack.getOrDefault(GranularHunger.HUNGER_PIP_COMPONENT, 0);
-		hungerManager.add(hungerPips, (float) foodComponent.nutrition() / foodComponent.saturation() / 2.0F);
+		hungerManager.add(hungerPips, (foodComponent.saturation() / 2f) / (foodComponent.nutrition() * 3 + hungerPips));
 	}
 	@Inject(method = "canConsume", at = @At("RETURN"), cancellable = true)
 	private void modifyCanConsume(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
