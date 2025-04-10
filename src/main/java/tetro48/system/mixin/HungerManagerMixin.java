@@ -118,7 +118,11 @@ public abstract class HungerManagerMixin {
         saturationLevel = Math.max(-saturationReduction, saturationLevel - saturationReduction);
     }
     @ModifyArg(method = "eat", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;addInternal(IF)V"), index = 0)
-    private int multiplyNormalResFoodBy3X(int nutrition){
+    private int multiplyNutritionResFoodBy3X(int nutrition){
         return nutrition*3;
+    }
+    @ModifyArg(method = "eat", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;addInternal(IF)V"), index = 1)
+    private float multiplySaturationResFoodBy3X(float saturation){
+        return saturation*3;
     }
 }
