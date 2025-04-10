@@ -98,6 +98,10 @@ public abstract class HungerManagerMixin {
     private int modifyMaxHunger(int constant) {
         return 60;
     }
+    @ModifyArg(method = "addInternal", index = 2, at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/MathHelper;clamp(FFF)F"))
+    private float noWastingSaturation(float value) {
+        return 60;
+    }
     @Inject(method = "addInternal", at = @At("HEAD"))
     private void modifySaturationGain(int nutrition, float saturation, CallbackInfo ci) {
         int excess = Math.max(this.foodLevel + nutrition - 60, 0);
