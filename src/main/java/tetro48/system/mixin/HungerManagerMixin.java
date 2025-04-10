@@ -101,7 +101,12 @@ public abstract class HungerManagerMixin {
     @Inject(method = "addInternal", at = @At("HEAD"))
     private void modifySaturationGain(int nutrition, float saturation, CallbackInfo ci) {
         int excess = Math.max(this.foodLevel + nutrition - 60, 0);
-        saturationLevel -= saturation * (nutrition-excess)/(float)nutrition;
+        float saturationReduction = saturation * (nutrition-excess)/(float)nutrition;
+        //NaN check
+        if (Float.isNaN(saturationReduction)) saturationReduction = 0;
+        saturationLevel -= saturationReduction;
+        //more NaN check, just in case
+        if (Float.isNaN(saturationLevel)) saturationLevel = 0;
     }
     @ModifyArg(method = "eat", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;addInternal(IF)V"), index = 0)
     private int multiplyNormalResFoodBy3X(int nutrition){

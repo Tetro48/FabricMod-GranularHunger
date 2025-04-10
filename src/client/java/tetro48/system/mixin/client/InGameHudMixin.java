@@ -89,7 +89,7 @@ public abstract class InGameHudMixin {
             if (j * 6 < fSaturationLevel) {
                 int pixelOffset = Math.max(0, partialSaturationPips) + 1;
 //                if (pixelOffset == 1) pixelOffset = 2;
-//                if (pixelOffset == 7) pixelOffset = 6;
+                if (pixelOffset == 7) pixelOffset = 6;
 
                 context.drawGuiTexture(identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
             }
