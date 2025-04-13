@@ -15,9 +15,11 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tetro48.system.GranularHunger;
+import tetro48.system.HungerManagerHelper;
 
 @Mixin(PlayerEntity.class)
 public abstract class PlayerEntityMixin extends LivingEntity {
@@ -37,10 +39,11 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 		remainingUnableToConsumeTicks--;
 	}
 
-	@Inject(method = "eatFood", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;eat(Lnet/minecraft/component/type/FoodComponent;)V", shift = At.Shift.AFTER))
-	private void onEatFood(World world, ItemStack stack, FoodComponent foodComponent, CallbackInfoReturnable<ItemStack> cir) {
+	//this order of arguments matter, cuz, how tf are you gon- also, world arg isn't used, but it's mandatory.
+	@Redirect(method = "eatFood", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;eat(Lnet/minecraft/component/type/FoodComponent;)V"))
+	private void onEatFood(HungerManager hungerManager, FoodComponent foodComponent, World world, ItemStack stack) {
 		int hungerPips = stack.getOrDefault(GranularHunger.HUNGER_PIP_COMPONENT, 0);
-		hungerManager.add(hungerPips, (foodComponent.saturation() / 2f) / (foodComponent.nutrition() * 3 + hungerPips));
+		HungerManagerHelper.eatCombined(hungerManager, foodComponent, hungerPips);
 	}
 	@Inject(method = "canConsume", at = @At("RETURN"), cancellable = true)
 	private void modifyCanConsume(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
