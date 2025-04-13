@@ -3,6 +3,7 @@
 	"package": "tetro48.system.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
+		"CakeBlockMixin",
 		"HungerManagerMixin",
 		"PlayerEntityMixin"
 	],
