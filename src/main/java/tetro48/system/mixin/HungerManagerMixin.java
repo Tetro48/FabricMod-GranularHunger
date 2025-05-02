@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tetro48.system.ExhaustionUpdatePacket;
+import tetro48.system.GranularHunger;
 
 @Mixin(HungerManager.class)
 public abstract class HungerManagerMixin {
@@ -48,11 +49,14 @@ public abstract class HungerManagerMixin {
 			foodLevel *= 3;
 			saturationLevel *= 3;
 		}
+		double hungerCostMultiplier = player.getAttributeValue(GranularHunger.hungerCostMultiplier);
+
 		ServerPlayNetworking.send((ServerPlayerEntity) player, new ExhaustionUpdatePacket(exhaustion - previousExhaustion));
+		float scaledDrainConst = (float) (ONE_AND_ONE_THIRD / hungerCostMultiplier);
 		if (Math.ceil(foodLevel/6f) < saturationLevel/6f) {
-			float saturationReduce = exhaustion/ONE_AND_ONE_THIRD;
+			float saturationReduce = exhaustion/scaledDrainConst;
 			if (saturationReduce > saturationLevel) {
-				exhaustion = (saturationReduce - saturationLevel) * ONE_AND_ONE_THIRD;
+				exhaustion = (saturationReduce - saturationLevel) * scaledDrainConst;
 				saturationLevel = 0;
 			}
 			else {
@@ -64,8 +68,8 @@ public abstract class HungerManagerMixin {
 			((ServerPlayerEntity) player).networkHandler.sendPacket(new HealthUpdateS2CPacket(player.getHealth(), this.foodLevel, this.saturationLevel));
 			previousSaturationLevel = saturationLevel;
 		}
-		while (exhaustion > ONE_AND_ONE_THIRD) {
-			exhaustion -= ONE_AND_ONE_THIRD;
+		while (exhaustion > scaledDrainConst) {
+			exhaustion -= scaledDrainConst;
 			this.foodLevel = Math.max(this.foodLevel - 1, 0);
 		}
 		previousExhaustion = exhaustion;

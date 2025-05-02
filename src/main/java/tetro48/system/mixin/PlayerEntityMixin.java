@@ -3,6 +3,7 @@ package tetro48.system.mixin;
 import net.minecraft.component.type.FoodComponent;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.HungerManager;
 import net.minecraft.entity.player.PlayerEntity;
@@ -60,5 +61,9 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 				this.playSound(SoundEvents.ENTITY_PLAYER_BURP, 0.25f, 0.8f + this.random.nextFloat() * 0.7f);
 			}
 		}
+	}
+	@Inject(method = "createPlayerAttributes", at = @At("RETURN"))
+	private static void addNewAttribute(CallbackInfoReturnable<DefaultAttributeContainer.Builder> cir) {
+		cir.getReturnValue().add(GranularHunger.hungerCostMultiplier);
 	}
 }

@@ -5,8 +5,11 @@ import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.component.ComponentType;
+import net.minecraft.entity.attribute.ClampedEntityAttribute;
+import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +23,11 @@ public class GranularHunger implements ModInitializer {
 			Identifier.of(GranularHunger.MOD_ID, "hunger_pips"),
 			ComponentType.<Integer>builder().codec(Codec.INT).build()
 	);
+
+	public static final RegistryEntry<EntityAttribute> hungerCostMultiplier = Registry.registerReference(
+			Registries.ATTRIBUTE,
+			Identifier.of(MOD_ID, "hunger_cost"),
+			new ClampedEntityAttribute("attribute.name." + MOD_ID + ".hunger_cost", 1d, 0d, Double.POSITIVE_INFINITY));
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
