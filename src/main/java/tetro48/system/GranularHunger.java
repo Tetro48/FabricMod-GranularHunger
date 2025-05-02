@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GranularHunger implements ModInitializer {
-	public static final String MOD_ID = "granular-hunger";
+	public static final String MOD_ID = "granular_hunger";
 
 	public static final Identifier EXHAUSTION_UPDATE_PACKET_ID = Identifier.of(MOD_ID, "exhaustion_update");
 	public static final ComponentType<Integer> HUNGER_PIP_COMPONENT = Registry.register(
