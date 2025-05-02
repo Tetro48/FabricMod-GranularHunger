@@ -74,7 +74,7 @@ public abstract class HungerManagerMixin {
 		}
 		previousExhaustion = exhaustion;
 		boolean bl = player.getWorld().getGameRules().getBoolean(GameRules.NATURAL_REGENERATION);
-		if (bl && player.canFoodHeal() && this.foodLevel >= 24) {
+		if (bl && player.canFoodHeal() && this.foodLevel > 24) {
 			++this.foodTickTimer;
 			if (this.foodTickTimer >= 400 * healTimeMultiplier[difficulty.getId()]) {
 				player.heal(1f);
