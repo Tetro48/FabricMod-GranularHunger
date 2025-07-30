@@ -24,10 +24,16 @@ public class GranularHunger implements ModInitializer {
 			ComponentType.<Integer>builder().codec(Codec.INT).build()
 	);
 
-	public static final RegistryEntry<EntityAttribute> hungerCostMultiplier = Registry.registerReference(
+	public static final RegistryEntry<EntityAttribute> HUNGER_COST_MULTIPLIER_ATTRIBUTE = Registry.registerReference(
 			Registries.ATTRIBUTE,
 			Identifier.of(MOD_ID, "hunger_cost"),
-			new ClampedEntityAttribute("attribute.name." + MOD_ID + ".hunger_cost", 1d, 0d, Double.POSITIVE_INFINITY));
+			new ClampedEntityAttribute("attribute.name." + MOD_ID + ".hunger_cost", 1d, 0d, Double.POSITIVE_INFINITY)
+					.setCategory(EntityAttribute.Category.NEGATIVE));
+	public static final RegistryEntry<EntityAttribute> MAX_HUNGER_ATTRIBUTE = Registry.registerReference(
+			Registries.ATTRIBUTE,
+			Identifier.of(MOD_ID, "max_hunger"),
+			new ClampedEntityAttribute("attribute.name." + MOD_ID + ".max_hunger", 60d, 0d, Double.POSITIVE_INFINITY)
+					.setTracked(true));
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.

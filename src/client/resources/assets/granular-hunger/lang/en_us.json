@@ -1,3 +1,4 @@
 {
-  "attribute.name.granular_hunger.hunger_cost": "Hunger Cost"
+  "attribute.name.granular_hunger.hunger_cost": "Hunger Cost",
+  "attribute.name.granular_hunger.max_hunger": "Max Hunger Points"
 }

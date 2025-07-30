@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 @Mixin(CakeBlock.class)
-public class CakeBlockMixin {
+public abstract class CakeBlockMixin {
 	@ModifyArg(method = "tryEat", index = 0, at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;canConsume(Z)Z"))
 	private static boolean canEatCakeEvenIfFull(boolean ignoreHunger) {
 		return true;

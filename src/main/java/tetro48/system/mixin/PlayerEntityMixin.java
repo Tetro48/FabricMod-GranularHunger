@@ -64,6 +64,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 	}
 	@Inject(method = "createPlayerAttributes", at = @At("RETURN"))
 	private static void addNewAttribute(CallbackInfoReturnable<DefaultAttributeContainer.Builder> cir) {
-		cir.getReturnValue().add(GranularHunger.hungerCostMultiplier);
+		cir.getReturnValue().add(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
+		cir.getReturnValue().add(GranularHunger.MAX_HUNGER_ATTRIBUTE);
 	}
 }

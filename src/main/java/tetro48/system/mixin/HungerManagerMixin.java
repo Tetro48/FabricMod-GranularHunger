@@ -6,6 +6,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.HealthUpdateS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameRules;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,6 +32,7 @@ public abstract class HungerManagerMixin {
 	@Unique private boolean isGranular;
 	@Unique private static final float ONE_AND_ONE_THIRD = 4f/3f;
 	@Unique private final float[] healTimeMultiplier = {0.4f, 0.6f, 1f, 1f};
+	@Unique private int maxFoodLevel = 60;
 
 	@Inject(method = "<init>", at = @At("TAIL"))
 	private void onInit(CallbackInfo ci) {
@@ -39,7 +41,7 @@ public abstract class HungerManagerMixin {
 
 	@Inject(method = "isNotFull", at = @At("RETURN"), cancellable = true)
 	private void isNotFullUntil60(CallbackInfoReturnable<Boolean> cir) {
-		cir.setReturnValue(this.foodLevel < 60);
+		cir.setReturnValue(this.foodLevel < maxFoodLevel);
 	}
 	@Inject(method = "update", at = @At("HEAD"), cancellable = true)
 	private void newUpdate(PlayerEntity player, CallbackInfo ci) {
@@ -49,8 +51,10 @@ public abstract class HungerManagerMixin {
 			foodLevel *= 3;
 			saturationLevel *= 3;
 		}
-		double hungerCostMultiplier = player.getAttributeValue(GranularHunger.hungerCostMultiplier);
-
+		maxFoodLevel = MathHelper.floor(player.getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
+		foodLevel = Math.min(foodLevel, maxFoodLevel);
+		saturationLevel = Math.min(saturationLevel, maxFoodLevel);
+		double hungerCostMultiplier = player.getAttributeValue(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
 		ServerPlayNetworking.send((ServerPlayerEntity) player, new ExhaustionUpdatePacket(exhaustion - previousExhaustion));
 		float scaledDrainConst = (float) (ONE_AND_ONE_THIRD / hungerCostMultiplier);
 		if (Math.ceil(foodLevel/6f) < saturationLevel/6f) {
@@ -105,19 +109,19 @@ public abstract class HungerManagerMixin {
 	}
 	@ModifyConstant(method = "addInternal", constant = @Constant(intValue = 20))
 	private int modifyMaxHunger(int constant) {
-		return 60;
+		return maxFoodLevel;
 	}
 	@ModifyArg(method = "addInternal", index = 2, at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/MathHelper;clamp(FFF)F"))
 	private float noWastingSaturation(float value) {
-		return 60;
+		return maxFoodLevel;
 	}
 	@Inject(method = "addInternal", at = @At("HEAD"))
 	private void modifySaturationGain(int nutrition, float saturation, CallbackInfo ci) {
 		if (nutrition <= 0) {
-			if (this.foodLevel < 60) saturationLevel -= saturation;
+			if (this.foodLevel < maxFoodLevel) saturationLevel -= saturation;
 			return;
 		}
-		int excess = Math.max(this.foodLevel + nutrition - 60, 0);
+		int excess = Math.max(this.foodLevel + nutrition - maxFoodLevel, 0);
 		float saturationReduction = saturation * (nutrition-excess)/(float)nutrition;
 		saturationLevel = Math.max(-saturationReduction, saturationLevel - saturationReduction);
 	}
