@@ -2,7 +2,9 @@
 	"required": true,
 	"package": "tetro48.system.mixin.client",
 	"compatibilityLevel": "JAVA_21",
+	"plugin": "tetro48.system.GranularHungerMixinPlugin",
 	"client": [
+		"GuiHungerOffsetMixin",
 		"GuiMixin",
 		"LocalPlayerMixin",
 		"PauseScreenMixin"

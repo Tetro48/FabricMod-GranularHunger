@@ -10,14 +10,11 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import tetro48.system.GranularHunger;
 import tetro48.system.GranularHungerClient;
@@ -42,25 +39,11 @@ public abstract class GuiMixin {
 	@Shadow @Final private static ResourceLocation FOOD_FULL_HUNGER_SPRITE;
 
 
-	@Shadow @Nullable protected abstract Player getCameraPlayer();
-
 	@Unique
 	private long previousTime;
 
 	@Unique private double expDecay(double a, double b, double decay, double dt) {
 		return b + (a - b) * Math.exp(-decay * dt);
-	}
-
-	@ModifyConstant(method = "renderPlayerHealth", constant = @Constant(intValue = 10, ordinal = 3))
-	private int offsetAccordingly(int constant) {
-		Player playerEntity = this.getCameraPlayer();
-		int maxHunger = 60;
-		if (playerEntity != null) {
-			maxHunger = Mth.floor(this.getCameraPlayer().getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
-		}
-		int lines = Math.ceilDiv(maxHunger, 60) - 1;
-		int offset = Math.max(10-lines, 4);
-		return constant - (lines * offset);
 	}
 
 	@Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;renderFood(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;II)V"), method = "renderPlayerHealth")
