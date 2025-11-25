@@ -33,6 +33,7 @@ public abstract class HungerManagerMixin {
 	@Unique private static final float ONE_AND_ONE_THIRD = 4f/3f;
 	@Unique private final float[] healTimeMultiplier = {0.4f, 0.6f, 1f, 1f};
 	@Unique private int maxFoodLevel = 60;
+	@Unique private double hungerCostMultiplier = 1d;
 
 	@Inject(method = "<init>", at = @At("TAIL"))
 	private void onInit(CallbackInfo ci) {
@@ -54,13 +55,12 @@ public abstract class HungerManagerMixin {
 		maxFoodLevel = MathHelper.floor(player.getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
 		foodLevel = Math.min(foodLevel, maxFoodLevel);
 		saturationLevel = Math.min(saturationLevel, maxFoodLevel);
-		double hungerCostMultiplier = player.getAttributeValue(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
+		hungerCostMultiplier = player.getAttributeValue(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
 		ServerPlayNetworking.send((ServerPlayerEntity) player, new ExhaustionUpdatePacket(exhaustion - previousExhaustion));
-		float scaledDrainConst = (float) (ONE_AND_ONE_THIRD / hungerCostMultiplier);
 		if (Math.ceil(foodLevel/6f) < saturationLevel/6f) {
-			float saturationReduce = exhaustion/scaledDrainConst;
+			float saturationReduce = exhaustion/ONE_AND_ONE_THIRD;
 			if (saturationReduce > saturationLevel) {
-				exhaustion = (saturationReduce - saturationLevel) * scaledDrainConst;
+				exhaustion = (saturationReduce - saturationLevel) * ONE_AND_ONE_THIRD;
 				saturationLevel = 0;
 			}
 			else {
@@ -72,8 +72,8 @@ public abstract class HungerManagerMixin {
 			((ServerPlayerEntity) player).networkHandler.sendPacket(new HealthUpdateS2CPacket(player.getHealth(), this.foodLevel, this.saturationLevel));
 			previousSaturationLevel = saturationLevel;
 		}
-		while (exhaustion > scaledDrainConst) {
-			exhaustion -= scaledDrainConst;
+		while (exhaustion > ONE_AND_ONE_THIRD) {
+			exhaustion -= ONE_AND_ONE_THIRD;
 			this.foodLevel = Math.max(this.foodLevel - 1, 0);
 		}
 		previousExhaustion = exhaustion;
@@ -114,6 +114,11 @@ public abstract class HungerManagerMixin {
 	@ModifyArg(method = "addInternal", index = 2, at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/MathHelper;clamp(FFF)F"))
 	private float noWastingSaturation(float value) {
 		return maxFoodLevel;
+	}
+	@Inject(method = "addExhaustion", at = @At("HEAD"), cancellable = true)
+	private void modifyExhaustionGain(float exhaustion, CallbackInfo ci) {
+		this.exhaustion += (float) (exhaustion * hungerCostMultiplier);
+		ci.cancel();
 	}
 	@Inject(method = "addInternal", at = @At("HEAD"))
 	private void modifySaturationGain(int nutrition, float saturation, CallbackInfo ci) {
