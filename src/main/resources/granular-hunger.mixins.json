@@ -4,8 +4,8 @@
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"CakeBlockMixin",
-		"HungerManagerMixin",
-		"PlayerEntityMixin"
+		"FoodDataMixin",
+		"PlayerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

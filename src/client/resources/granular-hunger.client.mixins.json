@@ -3,9 +3,9 @@
 	"package": "tetro48.system.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"ClientPlayerEntityMixin",
-		"GameMenuScreenMixin",
-		"InGameHudMixin"
+		"GuiMixin",
+		"LocalPlayerMixin",
+		"PauseScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

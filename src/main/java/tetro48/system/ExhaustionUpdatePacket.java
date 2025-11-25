@@ -1,16 +1,16 @@
 package tetro48.system;
 
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public record ExhaustionUpdatePacket(float exhaustion) implements CustomPayload {
-	public static final CustomPayload.Id<ExhaustionUpdatePacket> ID = new CustomPayload.Id<>(GranularHunger.EXHAUSTION_UPDATE_PACKET_ID);
-	public static final PacketCodec<RegistryByteBuf, ExhaustionUpdatePacket> CODEC = PacketCodec.tuple(PacketCodecs.FLOAT, ExhaustionUpdatePacket::exhaustion, ExhaustionUpdatePacket::new);
+public record ExhaustionUpdatePacket(float exhaustion) implements CustomPacketPayload {
+	public static final CustomPacketPayload.Type<ExhaustionUpdatePacket> ID = new CustomPacketPayload.Type<>(GranularHunger.EXHAUSTION_UPDATE_PACKET_ID);
+	public static final StreamCodec<RegistryFriendlyByteBuf, ExhaustionUpdatePacket> CODEC = StreamCodec.composite(ByteBufCodecs.FLOAT, ExhaustionUpdatePacket::exhaustion, ExhaustionUpdatePacket::new);
 
 	@Override
-	public CustomPayload.Id<? extends CustomPayload> getId() {
+	public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
 		return ID;
 	}
 }

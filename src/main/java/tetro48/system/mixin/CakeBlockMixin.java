@@ -1,6 +1,6 @@
 package tetro48.system.mixin;
 
-import net.minecraft.block.CakeBlock;
+import net.minecraft.world.level.block.CakeBlock;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -10,11 +10,11 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 @Mixin(CakeBlock.class)
 public abstract class CakeBlockMixin {
-	@ModifyArg(method = "tryEat", index = 0, at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;canConsume(Z)Z"))
+	@ModifyArg(method = "eat", index = 0, at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;canEat(Z)Z"))
 	private static boolean canEatCakeEvenIfFull(boolean ignoreHunger) {
 		return true;
 	}
-	@ModifyArgs(method = "tryEat", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/HungerManager;add(IF)V"))
+	@ModifyArgs(method = "eat", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;eat(IF)V"))
 	private static void makeCakeABTWDessert(Args args) {
 		args.set(0, 4);
 		args.set(1, 2f);
