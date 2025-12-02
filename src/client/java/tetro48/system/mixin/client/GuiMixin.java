@@ -1,12 +1,13 @@
 package tetro48.system.mixin.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.Util;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.util.Util;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
@@ -22,11 +23,11 @@ import tetro48.system.GranularHungerClient;
 @Mixin(Gui.class)
 public abstract class GuiMixin {
 
-	@Shadow @Final private static ResourceLocation FOOD_EMPTY_SPRITE;
+	@Shadow @Final private static Identifier FOOD_EMPTY_SPRITE;
 
-	@Shadow @Final private static ResourceLocation FOOD_FULL_SPRITE;
+	@Shadow @Final private static Identifier FOOD_FULL_SPRITE;
 
-	@Unique private static final ResourceLocation FOOD_FAT_OUTLINE = ResourceLocation.fromNamespaceAndPath("granular-hunger","hud/food_fat_outline");
+	@Unique private static final Identifier FOOD_FAT_OUTLINE = Identifier.fromNamespaceAndPath("granular-hunger","hud/food_fat_outline");
 
 	@Final
 	@Shadow
@@ -34,9 +35,9 @@ public abstract class GuiMixin {
 
 	@Shadow private int tickCount;
 
-	@Shadow @Final private static ResourceLocation FOOD_EMPTY_HUNGER_SPRITE;
+	@Shadow @Final private static Identifier FOOD_EMPTY_HUNGER_SPRITE;
 
-	@Shadow @Final private static ResourceLocation FOOD_FULL_HUNGER_SPRITE;
+	@Shadow @Final private static Identifier FOOD_FULL_HUNGER_SPRITE;
 
 
 	@Unique
@@ -59,7 +60,6 @@ public abstract class GuiMixin {
 		if (GranularHungerClient.foodBarShakeTimer > 0) {
 			GranularHungerClient.foodBarShakeTimer = (float) Math.max(0d, expDecay(GranularHungerClient.foodBarShakeTimer, 0d, 10d, dt));
 		}
-		RenderSystem.enableBlend();
 		for(int j = 0; j < Math.ceilDiv(maxHunger, 6); ++j) {
 			int line = j / 10;
 			int row = j % 10;
@@ -67,9 +67,9 @@ public abstract class GuiMixin {
 			int partialHungerPips = Math.min(6, iFoodLevel - j * 6);
 			int partialSaturationPips = (int) Math.min(8, ((fSaturationLevel + 0.124f) / 0.75f) - j * 8f);
 			int k = top - line * Math.max(11-lines, 4);
-			ResourceLocation identifier;
-			ResourceLocation identifier1;
-			ResourceLocation identifier2;
+			Identifier identifier;
+			Identifier identifier1;
+			Identifier identifier2;
 			if (player.hasEffect(MobEffects.HUNGER)) {
 				identifier = FOOD_EMPTY_HUNGER_SPRITE;
 				identifier1 = FOOD_FAT_OUTLINE;
@@ -87,23 +87,22 @@ public abstract class GuiMixin {
 			int l = right - row * 8 - 9;
 			if ((j+1) * 6 > maxHunger) {
 				int pixelOffset = (maxHunger - (j*6));
-				context.blitSprite(identifier, 9, 9, 7-pixelOffset, 0, l + (7-pixelOffset), k, pixelOffset+2, 9);
+				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier, 9, 9, 7-pixelOffset, 0, l + (7-pixelOffset), k, pixelOffset+2, 9);
 			}
 			else {
-				context.blitSprite(identifier, l, k, 9, 9);
+				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier, l, k, 9, 9);
 			}
 			if (j * 6 < iSaturationPips) {
 				int pixelOffset = Math.max(0, partialSaturationPips);
-				context.blitSprite(identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
+				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
 			}
 			if (j * 6 < iFoodLevel) {
 				int pixelOffset = Math.max(0, partialHungerPips) + 1;
 				if (pixelOffset == 1) pixelOffset = 2;
 
-				context.blitSprite(identifier2, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
+				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier2, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
 			}
 		}
-		RenderSystem.disableBlend();
 		previousTime = Util.getNanos();
 	}
 

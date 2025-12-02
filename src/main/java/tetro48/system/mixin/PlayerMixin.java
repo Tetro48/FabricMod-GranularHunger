@@ -40,12 +40,7 @@ public abstract class PlayerMixin extends LivingEntity {
 		remainingUnableToConsumeTicks--;
 	}
 
-	//this order of arguments matter, cuz, how tf are you gon- also, world arg isn't used, but it's mandatory.
-	@Redirect(method = "eat", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;eat(Lnet/minecraft/world/food/FoodProperties;)V"))
-	private void onEatFood(FoodData hungerManager, FoodProperties foodComponent, Level world, ItemStack stack) {
-		int hungerPips = stack.getOrDefault(GranularHunger.HUNGER_PIP_COMPONENT, 0);
-		HungerManagerHelper.eatCombined(hungerManager, foodComponent, hungerPips);
-	}
+
 	@Inject(method = "canEat", at = @At("RETURN"), cancellable = true)
 	private void modifyCanConsume(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
 		System.out.println("could eat: " + cir.getReturnValue());

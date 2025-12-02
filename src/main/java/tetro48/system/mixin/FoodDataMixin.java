@@ -8,7 +8,9 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -29,6 +31,9 @@ public abstract class FoodDataMixin {
 	@Unique private float previousSaturationLevel;
 
 	@Shadow private int tickTimer;
+
+	@Shadow public abstract int getFoodLevel();
+
 	@Unique private boolean isGranular;
 	@Unique private static final float ONE_AND_ONE_THIRD = 4f/3f;
 	@Unique private final float[] healTimeMultiplier = {0.4f, 0.6f, 1f, 1f};
@@ -44,51 +49,60 @@ public abstract class FoodDataMixin {
 	private void isNotFullUntil60(CallbackInfoReturnable<Boolean> cir) {
 		cir.setReturnValue(this.foodLevel < maxFoodLevel);
 	}
+	@Inject(method = "hasEnoughFood", at = @At("HEAD"), cancellable = true)
+	private void adaptHasEnoughFood(CallbackInfoReturnable<Boolean> cir) {
+		cir.setReturnValue(this.getFoodLevel() > 18F);
+	}
 	@Inject(method = "tick", at = @At("HEAD"), cancellable = true)
-	private void newUpdate(Player player, CallbackInfo ci) {
-		Difficulty difficulty = player.level().getDifficulty();
+	private void newUpdate(ServerPlayer serverPlayer, CallbackInfo ci) {
+		Difficulty difficulty = serverPlayer.level().getDifficulty();
 		if (!isGranular) {
 			isGranular = true;
 			foodLevel *= 3;
 			saturationLevel *= 3;
 		}
-		maxFoodLevel = Mth.floor(player.getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
+		maxFoodLevel = Mth.floor(serverPlayer.getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
 		foodLevel = Math.min(foodLevel, maxFoodLevel);
 		saturationLevel = Math.min(saturationLevel, maxFoodLevel);
-		hungerCostMultiplier = player.getAttributeValue(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
-		ServerPlayNetworking.send((ServerPlayer) player, new ExhaustionUpdatePacket(exhaustionLevel - previousExhaustion));
-		if (Math.ceil(foodLevel/6f) < saturationLevel/6f) {
-			float saturationReduce = exhaustionLevel /ONE_AND_ONE_THIRD;
-			if (saturationReduce > saturationLevel) {
-				exhaustionLevel = (saturationReduce - saturationLevel) * ONE_AND_ONE_THIRD;
-				saturationLevel = 0;
+		hungerCostMultiplier = serverPlayer.getAttributeValue(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
+		ServerPlayNetworking.send(serverPlayer, new ExhaustionUpdatePacket(exhaustionLevel - previousExhaustion));
+		boolean doesFatBurn = Math.ceil(foodLevel/6f) < saturationLevel/6f;
+		while (exhaustionLevel > ONE_AND_ONE_THIRD || (doesFatBurn && exhaustionLevel > 0.5f)) {
+			doesFatBurn = Math.ceil(foodLevel/6f) < saturationLevel/6f;
+
+			if (doesFatBurn) {
+				float saturationReduce = 1 / ONE_AND_ONE_THIRD;
+				if (saturationReduce > saturationLevel) {
+					exhaustionLevel = (saturationReduce - saturationLevel) * ONE_AND_ONE_THIRD;
+					saturationLevel = 0;
+				}
+				else {
+					saturationLevel -= saturationReduce;
+					exhaustionLevel -= 1;
+				}
 			}
 			else {
-				saturationLevel -= saturationReduce;
-				exhaustionLevel = 0;
+				exhaustionLevel -= ONE_AND_ONE_THIRD;
+				this.foodLevel = Math.max(this.foodLevel - 1, 0);
 			}
 		}
 		if (saturationLevel != previousSaturationLevel) {
-			((ServerPlayer) player).connection.send(new ClientboundSetHealthPacket(player.getHealth(), this.foodLevel, this.saturationLevel));
+			serverPlayer.connection.send(new ClientboundSetHealthPacket(serverPlayer.getHealth(), this.foodLevel, this.saturationLevel));
 			previousSaturationLevel = saturationLevel;
 		}
-		while (exhaustionLevel > ONE_AND_ONE_THIRD) {
-			exhaustionLevel -= ONE_AND_ONE_THIRD;
-			this.foodLevel = Math.max(this.foodLevel - 1, 0);
-		}
 		previousExhaustion = exhaustionLevel;
-		boolean bl = player.level().getGameRules().getBoolean(GameRules.RULE_NATURAL_REGENERATION);
-		if (bl && player.isHurt() && this.foodLevel > 24) {
+		boolean bl = serverPlayer.level().getGameRules().get(GameRules.NATURAL_HEALTH_REGENERATION);
+		if (bl && serverPlayer.isHurt() && this.foodLevel > 24) {
 			++this.tickTimer;
 			if (this.tickTimer >= 400 * healTimeMultiplier[difficulty.getId()]) {
-				player.heal(1f);
+				serverPlayer.heal(1f);
 				this.tickTimer = 0;
 			}
 		}
 		else if (this.foodLevel == 0 && this.saturationLevel <= 0) {
 			++this.tickTimer;
 			if (this.tickTimer >= 80) {
-				player.hurt(player.damageSources().starve(), 1.0F);
+				serverPlayer.hurt(serverPlayer.damageSources().starve(), 1.0F);
 				this.tickTimer = 0;
 			}
 		}
@@ -97,15 +111,15 @@ public abstract class FoodDataMixin {
 		}
 		ci.cancel();
 	}
-	@Inject(method = "readAdditionalSaveData", at = @At(value = "INVOKE", target = "Lnet/minecraft/nbt/CompoundTag;getInt(Ljava/lang/String;)I", ordinal = 0))
-	private void readCustomNbtAttribute(CompoundTag nbt, CallbackInfo ci) {
+	@Inject(method = "readAdditionalSaveData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/storage/ValueInput;getIntOr(Ljava/lang/String;I)I", ordinal = 0))
+	private void readCustomNbtAttribute(ValueInput valueInput, CallbackInfo ci) {
 
-		this.isGranular = nbt.getBoolean("is_granular_hunger");
+		this.isGranular = valueInput.getBooleanOr("is_granular_hunger", false);
 	}
-	@Inject(method = "addAdditionalSaveData", at = @At(value = "INVOKE", target = "Lnet/minecraft/nbt/CompoundTag;putInt(Ljava/lang/String;I)V", ordinal = 0))
-	private void writeCustomNbtAttribute(CompoundTag nbt, CallbackInfo ci) {
+	@Inject(method = "addAdditionalSaveData", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/storage/ValueOutput;putInt(Ljava/lang/String;I)V", ordinal = 0))
+	private void writeCustomNbtAttribute(ValueOutput valueOutput, CallbackInfo ci) {
 
-		nbt.putBoolean("is_granular_hunger", this.isGranular);
+		valueOutput.putBoolean("is_granular_hunger", this.isGranular);
 	}
 	@ModifyConstant(method = "add", constant = @Constant(intValue = 20))
 	private int modifyMaxHunger(int constant) {

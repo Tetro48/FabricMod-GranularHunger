@@ -6,7 +6,9 @@ import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import tetro48.system.GranularHunger;
 
@@ -14,7 +16,7 @@ import tetro48.system.GranularHunger;
 public abstract class GuiHungerOffsetMixin {
 	@Shadow @Nullable protected abstract Player getCameraPlayer();
 
-	@ModifyConstant(method = "renderPlayerHealth", constant = @Constant(intValue = 10, ordinal = 3))
+	@ModifyArg(method = "renderPlayerHealth", index = 3, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;renderAirBubbles(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;III)V"))
 	private int offsetAccordingly(int constant) {
 		Player playerEntity = this.getCameraPlayer();
 		int maxHunger = 60;

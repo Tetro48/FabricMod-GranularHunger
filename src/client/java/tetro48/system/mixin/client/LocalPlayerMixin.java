@@ -11,15 +11,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LocalPlayer.class)
-public abstract class LocalPlayerMixin extends Player {
-	public LocalPlayerMixin(Level world, BlockPos pos, float yaw, GameProfile gameProfile) {
-		super(world, pos, yaw, gameProfile);
-	}
-
-	@Inject(method = "hasEnoughFoodToStartSprinting", at = @At("RETURN"), cancellable = true)
-	private void noSprintUnder3Shanks(CallbackInfoReturnable<Boolean> cir) {
-		if (this.getFoodData().getFoodLevel() <= 18 && cir.getReturnValue()) {
-			cir.setReturnValue(false);
-		}
-	}
+public abstract class LocalPlayerMixin {
+//	public LocalPlayerMixin(Level world, BlockPos pos, float yaw, GameProfile gameProfile) {
+//		super(world, pos, yaw, gameProfile);
+//	}
+//
+//	@Inject(method = "canStartSprinting", at = @At("RETURN"), cancellable = true)
+//	private void noSprintUnder3Shanks(CallbackInfoReturnable<Boolean> cir) {
+//		if (this.getFoodData().getFoodLevel() <= 18 && cir.getReturnValue()) {
+//			cir.setReturnValue(false);
+//		}
+//	}
 }

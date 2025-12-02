@@ -5,6 +5,7 @@
 	"mixins": [
 		"CakeBlockMixin",
 		"FoodDataMixin",
+		"FoodPropertiesMixin",
 		"PlayerMixin"
 	],
 	"injectors": {
