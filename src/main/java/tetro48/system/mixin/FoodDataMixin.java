@@ -57,24 +57,29 @@ public abstract class FoodDataMixin {
 		saturationLevel = Math.min(saturationLevel, maxFoodLevel);
 		hungerCostMultiplier = player.getAttributeValue(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
 		ServerPlayNetworking.send((ServerPlayer) player, new ExhaustionUpdatePacket(exhaustionLevel - previousExhaustion));
-		if (Math.ceil(foodLevel/6f) < saturationLevel/6f) {
-			float saturationReduce = exhaustionLevel /ONE_AND_ONE_THIRD;
-			if (saturationReduce > saturationLevel) {
-				exhaustionLevel = (saturationReduce - saturationLevel) * ONE_AND_ONE_THIRD;
-				saturationLevel = 0;
+		boolean doesFatBurn = Math.ceil(foodLevel/6f) < saturationLevel/6f;
+		while (exhaustionLevel > ONE_AND_ONE_THIRD || (doesFatBurn && exhaustionLevel > 0.5f)) {
+			doesFatBurn = Math.ceil(foodLevel/6f) < saturationLevel/6f;
+
+			if (doesFatBurn) {
+				float saturationReduce = 1 / ONE_AND_ONE_THIRD;
+				if (saturationReduce > saturationLevel) {
+					exhaustionLevel = (saturationReduce - saturationLevel) * ONE_AND_ONE_THIRD;
+					saturationLevel = 0;
+				}
+				else {
+					saturationLevel -= saturationReduce;
+					exhaustionLevel -= 1;
+				}
 			}
 			else {
-				saturationLevel -= saturationReduce;
-				exhaustionLevel = 0;
+				exhaustionLevel -= ONE_AND_ONE_THIRD;
+				this.foodLevel = Math.max(this.foodLevel - 1, 0);
 			}
 		}
 		if (saturationLevel != previousSaturationLevel) {
 			((ServerPlayer) player).connection.send(new ClientboundSetHealthPacket(player.getHealth(), this.foodLevel, this.saturationLevel));
 			previousSaturationLevel = saturationLevel;
-		}
-		while (exhaustionLevel > ONE_AND_ONE_THIRD) {
-			exhaustionLevel -= ONE_AND_ONE_THIRD;
-			this.foodLevel = Math.max(this.foodLevel - 1, 0);
 		}
 		previousExhaustion = exhaustionLevel;
 		boolean bl = player.level().getGameRules().getBoolean(GameRules.RULE_NATURAL_REGENERATION);
