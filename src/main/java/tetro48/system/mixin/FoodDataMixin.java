@@ -126,8 +126,7 @@ public abstract class FoodDataMixin {
 			if (this.foodLevel < maxFoodLevel) saturationLevel -= saturation;
 			return;
 		}
-		int excess = Math.max(this.foodLevel + nutrition - maxFoodLevel, 0);
-		float saturationReduction = saturation * (nutrition-excess)/(float)nutrition;
+		float saturationReduction = GranularHunger.getSaturationReduction(foodLevel, maxFoodLevel, nutrition, saturation);
 		saturationLevel = Math.max(-saturationReduction, saturationLevel - saturationReduction);
 	}
 	@ModifyArg(method = "eat(Lnet/minecraft/world/food/FoodProperties;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;add(IF)V"), index = 0)
