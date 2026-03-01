@@ -2,15 +2,18 @@ package tetro48.system.mixin;
 
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -35,6 +38,8 @@ public abstract class PlayerMixin extends LivingEntity {
 
 	@Shadow protected FoodData foodData;
 
+	@Shadow @Final private Abilities abilities;
+
 	@Inject(method = "tick", at = @At("HEAD"))
 	private void tickCustom(CallbackInfo ci) {
 		remainingUnableToConsumeTicks--;
@@ -48,7 +53,6 @@ public abstract class PlayerMixin extends LivingEntity {
 	}
 	@Inject(method = "canEat", at = @At("RETURN"), cancellable = true)
 	private void modifyCanConsume(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
-		System.out.println("could eat: " + cir.getReturnValue());
 		if (hasEffect(MobEffects.HUNGER)) {
 			if (remainingUnableToConsumeTicks <= 0) {
 				remainingUnableToConsumeTicks = 10;
@@ -57,11 +61,12 @@ public abstract class PlayerMixin extends LivingEntity {
 			cir.setReturnValue(false);
 			return;
 		}
-		if (!cir.getReturnValue()) {
+		if (!this.abilities.invulnerable && !ignoreHunger && foodData.getFoodLevel() >= Mth.floor(this.getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE))) {
 			if (remainingUnableToConsumeTicks <= 0) {
 				remainingUnableToConsumeTicks = 10;
 				this.playSound(SoundEvents.PLAYER_BURP, 0.25f, 0.8f + this.random.nextFloat() * 0.7f);
 			}
+			cir.setReturnValue(false);
 		}
 	}
 	@Inject(method = "createAttributes", at = @At("RETURN"))
