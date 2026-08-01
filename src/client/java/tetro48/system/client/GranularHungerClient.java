@@ -1,7 +1,8 @@
-package tetro48.system;
+package tetro48.system.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import tetro48.system.ExhaustionUpdatePacket;
 
 public class GranularHungerClient implements ClientModInitializer {
 

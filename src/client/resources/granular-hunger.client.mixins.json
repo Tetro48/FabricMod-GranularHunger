@@ -1,11 +1,10 @@
 {
 	"required": true,
-	"package": "tetro48.system.mixin.client",
+	"package": "tetro48.system.client.mixin",
 	"compatibilityLevel": "JAVA_21",
-	"plugin": "tetro48.system.GranularHungerMixinPlugin",
+	"plugin": "tetro48.system.client.GranularHungerMixinPlugin",
 	"client": [
-		"GuiHungerOffsetMixin",
-		"GuiMixin",
+		"HudMixin",
 		"MinecraftMixin"
 	],
 	"injectors": {

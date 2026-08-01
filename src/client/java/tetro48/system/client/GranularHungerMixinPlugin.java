@@ -1,4 +1,4 @@
-package tetro48.system;
+package tetro48.system.client;
 
 import com.google.common.collect.ImmutableMap;
 import net.fabricmc.loader.api.FabricLoader;

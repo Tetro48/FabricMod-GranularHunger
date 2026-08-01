@@ -47,7 +47,7 @@ public class GranularHunger implements ModInitializer {
 		// Proceed with mild caution.
 
 		LOGGER.info("Hello Fabric world!");
-		PayloadTypeRegistry.playS2C().register(ExhaustionUpdatePacket.ID, ExhaustionUpdatePacket.CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(ExhaustionUpdatePacket.ID, ExhaustionUpdatePacket.CODEC);
 	}
 
 	public static float getSaturationReduction(int foodLevel, int maxFoodLevel, int nutrition, float saturation) {

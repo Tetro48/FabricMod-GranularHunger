@@ -1,8 +1,8 @@
-package tetro48.system.mixin.client;
+package tetro48.system.client.mixin;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
@@ -18,12 +18,14 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tetro48.system.GranularHunger;
-import tetro48.system.GranularHungerClient;
+import tetro48.system.client.GranularHungerClient;
 
-@Mixin(Gui.class)
-public abstract class GuiMixin {
+@Mixin(Hud.class)
+public abstract class HudMixin {
 
 	@Shadow @Final private static Identifier FOOD_EMPTY_SPRITE;
 
@@ -47,8 +49,8 @@ public abstract class GuiMixin {
 		return b + (a - b) * Math.exp(-decay * dt);
 	}
 
-	@Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;renderFood(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;II)V"), method = "renderPlayerHealth")
-	private void modifyRenderFood(Gui instance, GuiGraphics context, Player player, int top, int right) {
+	@Inject(method = "extractFood", at = @At("HEAD"), cancellable = true)
+	private void modifyRenderFood(final GuiGraphicsExtractor context, final Player player, final int top, final int right, CallbackInfo ci) {
 		int maxHunger = Mth.floor(player.getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
 		this.granularHungerRandom.setSeed(this.tickCount * 312871L);
 		double dt = (Util.getNanos() - previousTime) / 1e9d;
@@ -104,11 +106,12 @@ public abstract class GuiMixin {
 				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier2, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
 			}
 		}
-		renderOverlay(instance, context, player, top, right, maxHunger, foodBarShakeTimer);
+		renderOverlay(context, player, top, right, maxHunger, foodBarShakeTimer);
 		previousTime = Util.getNanos();
+		ci.cancel();
 	}
 	@Unique
-	private void renderOverlay(Gui guiInstance, GuiGraphics context, Player player, int top, int right, int maxHunger, float foodBarShakeTimer) {
+	private void renderOverlay(GuiGraphicsExtractor context, Player player, int top, int right, int maxHunger, float foodBarShakeTimer) {
 
 		ItemStack item = player.getMainHandItem();
 		var foodComponent = item.get(DataComponents.FOOD);

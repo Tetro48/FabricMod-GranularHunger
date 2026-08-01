@@ -20,7 +20,7 @@
 			"tetro48.system.GranularHunger"
 		],
 		"client": [
-			"tetro48.system.GranularHungerClient"
+			"tetro48.system.client.GranularHungerClient"
 		]
 	},
 	"mixins": [
@@ -31,9 +31,9 @@
 		}
 	],
 	"depends": {
-		"fabricloader": ">=0.18",
-		"minecraft": "1.21.11",
-		"java": ">=21",
+		"fabricloader": ">=0.19",
+		"minecraft": "~26.2",
+		"java": ">=25",
 		"fabric-api": "*"
 	}
 }
