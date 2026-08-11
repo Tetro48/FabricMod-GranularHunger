@@ -1,8 +1,7 @@
 {
 	"required": true,
 	"package": "tetro48.system.client.mixin",
-	"compatibilityLevel": "JAVA_21",
-	"plugin": "tetro48.system.client.GranularHungerMixinPlugin",
+	"compatibilityLevel": "JAVA_25",
 	"client": [
 		"HudMixin",
 		"MinecraftMixin"

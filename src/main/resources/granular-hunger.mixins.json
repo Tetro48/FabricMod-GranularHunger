@@ -1,7 +1,7 @@
 {
 	"required": true,
 	"package": "tetro48.system.mixin",
-	"compatibilityLevel": "JAVA_21",
+	"compatibilityLevel": "JAVA_25",
 	"mixins": [
 		"CakeBlockMixin",
 		"FoodDataMixin",

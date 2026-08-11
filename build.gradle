@@ -7,6 +7,30 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
+	maven {
+		url = "https://maven.isxander.dev/releases"
+
+		content {
+			includeGroup "dev.isxander"
+			includeGroup "org.quiltmc.parsers"
+		}
+	}
+
+	maven {
+		url = "https://maven.azureaaron.net/releases"
+
+		content {
+			includeGroup "net.azureaaron"
+		}
+	}
+
+	maven {
+		url = "https://maven.azureaaron.net/snapshots"
+
+		content {
+			includeGroup "net.azureaaron"
+		}
+	}
 	// Add repositories to retrieve artifacts from in here.
 	// You should only use this when depending on other mods because
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
@@ -34,6 +58,12 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Dandelion (also shades in MoulConfig)
+	include implementation("net.azureaaron:dandelion:${project.dandelion_version}")
+
+	// Fabric Language Kotlin for using MoulConfig
+	implementation("net.fabricmc:fabric-language-kotlin:${project.flk_version}")
 }
 
 processResources {

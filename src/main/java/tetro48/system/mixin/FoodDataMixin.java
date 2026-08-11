@@ -3,6 +3,7 @@ package tetro48.system.mixin;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Difficulty;
@@ -53,9 +54,32 @@ public abstract class FoodDataMixin {
 	private void adaptHasEnoughFood(CallbackInfoReturnable<Boolean> cir) {
 		cir.setReturnValue(this.getFoodLevel() > 18F);
 	}
+
+	@Unique
+	private boolean burnInBTWStyle() {
+		boolean	doesFatBurn = Math.ceil(foodLevel/6f) < saturationLevel/6f;
+		if (doesFatBurn) {
+			float saturationReduce = 1 / ONE_AND_ONE_THIRD;
+			if (saturationReduce > saturationLevel) {
+				exhaustionLevel = (saturationReduce - saturationLevel) * ONE_AND_ONE_THIRD;
+				saturationLevel = 0;
+			}
+			else {
+				saturationLevel -= saturationReduce;
+				exhaustionLevel -= 1;
+			}
+		}
+		else {
+			exhaustionLevel -= ONE_AND_ONE_THIRD;
+			this.foodLevel = Math.max(this.foodLevel - 1, 0);
+		}
+		return doesFatBurn;
+	}
+
 	@Inject(method = "tick", at = @At("HEAD"), cancellable = true)
 	private void newUpdate(ServerPlayer serverPlayer, CallbackInfo ci) {
-		Difficulty difficulty = serverPlayer.level().getDifficulty();
+		ServerLevel level = serverPlayer.level();
+		Difficulty difficulty = level.getDifficulty();
 		if (!isGranular) {
 			isGranular = true;
 			foodLevel *= 3;
@@ -66,26 +90,8 @@ public abstract class FoodDataMixin {
 		saturationLevel = Math.min(saturationLevel, maxFoodLevel);
 		hungerCostMultiplier = serverPlayer.getAttributeValue(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
 		ServerPlayNetworking.send(serverPlayer, new ExhaustionUpdatePacket(exhaustionLevel - previousExhaustion));
-		boolean doesFatBurn = Math.ceil(foodLevel/6f) < saturationLevel/6f;
-		while (exhaustionLevel > ONE_AND_ONE_THIRD || (doesFatBurn && exhaustionLevel > 0.5f)) {
-			doesFatBurn = Math.ceil(foodLevel/6f) < saturationLevel/6f;
-
-			if (doesFatBurn) {
-				float saturationReduce = 1 / ONE_AND_ONE_THIRD;
-				if (saturationReduce > saturationLevel) {
-					exhaustionLevel = (saturationReduce - saturationLevel) * ONE_AND_ONE_THIRD;
-					saturationLevel = 0;
-				}
-				else {
-					saturationLevel -= saturationReduce;
-					exhaustionLevel -= 1;
-				}
-			}
-			else {
-				exhaustionLevel -= ONE_AND_ONE_THIRD;
-				this.foodLevel = Math.max(this.foodLevel - 1, 0);
-			}
-		}
+//		switch ()
+		burnInBTWStyle();
 		if (saturationLevel != previousSaturationLevel) {
 			serverPlayer.connection.send(new ClientboundSetHealthPacket(serverPlayer.getHealth(), this.foodLevel, this.saturationLevel));
 			previousSaturationLevel = saturationLevel;
@@ -102,7 +108,7 @@ public abstract class FoodDataMixin {
 		else if (this.foodLevel == 0 && this.saturationLevel <= 0) {
 			++this.tickTimer;
 			if (this.tickTimer >= 80) {
-				serverPlayer.hurt(serverPlayer.damageSources().starve(), 1.0F);
+				serverPlayer.hurtServer(level, serverPlayer.damageSources().starve(), 1.0F);
 				this.tickTimer = 0;
 			}
 		}

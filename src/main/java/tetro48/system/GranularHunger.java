@@ -1,6 +1,7 @@
 package tetro48.system;
 
 import com.mojang.serialization.Codec;
+import net.azureaaron.dandelion.api.ConfigType;
 import net.fabricmc.api.ModInitializer;
 
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -39,6 +40,7 @@ public class GranularHunger implements ModInitializer {
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
+	public static ConfigType CONFIG_BACKEND = ConfigType.MOUL_CONFIG;
 
 	@Override
 	public void onInitialize() {
