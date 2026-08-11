@@ -6,7 +6,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 public class GranularHungerClient implements ClientModInitializer {
 
 	public static boolean receivedExhaustionSinceLogin;
-	public static float foodBarShakeTimer;
+	public static double foodBarShakeTimer;
+	public static double forcedShakeTime;
 
 	@Override
 	public void onInitializeClient() {
@@ -14,8 +15,10 @@ public class GranularHungerClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(ExhaustionUpdatePacket.ID, (payload, context) -> {
 			context.client().execute(() -> {
 				float newExhaustion = payload.exhaustion();
-				if (receivedExhaustionSinceLogin)
-					foodBarShakeTimer += (float) Math.max(0, Math.pow(newExhaustion, 1.2d)) * 10;
+				if (receivedExhaustionSinceLogin) {
+					foodBarShakeTimer += Math.max(0, Math.pow(newExhaustion * 5, 1.35d));
+					if (newExhaustion > 0.001) forcedShakeTime = 0.1d;
+				}
 				else receivedExhaustionSinceLogin = true;
 			});
 		});

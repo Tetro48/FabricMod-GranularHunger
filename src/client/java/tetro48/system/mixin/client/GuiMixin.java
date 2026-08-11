@@ -12,12 +12,13 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tetro48.system.GranularHunger;
 import tetro48.system.GranularHungerClient;
 
@@ -36,6 +37,10 @@ public abstract class GuiMixin {
 
 	@Shadow @Final private static ResourceLocation FOOD_FULL_HUNGER_SPRITE;
 
+	@Shadow
+	@Nullable
+	protected abstract Player getCameraPlayer();
+
 	@Unique
 	private RandomSource granularHungerRandom = RandomSource.create();
 
@@ -46,21 +51,34 @@ public abstract class GuiMixin {
 		return b + (a - b) * Math.exp(-decay * dt);
 	}
 
-	@Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;renderFood(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/entity/player/Player;II)V"), method = "renderPlayerHealth")
-	private void modifyRenderFood(Gui instance, GuiGraphics context, Player player, int top, int right) {
+	@ModifyArg(method = "renderPlayerHealth", index = 2, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lnet/minecraft/resources/ResourceLocation;IIII)V"))
+	private int offsetAccordingly(int constant) {
+		Player playerEntity = this.getCameraPlayer();
+		int maxHunger = 60;
+		if (playerEntity != null) {
+			maxHunger = Mth.floor(this.getCameraPlayer().getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
+		}
+		int lines = Math.ceilDiv(maxHunger, 60) - 1;
+		int offset = Math.max(10-lines, 4);
+		return constant - (lines * offset);
+	}
+
+	@Inject(at = @At("HEAD"), method = "renderFood", cancellable = true)
+	private void modifyRenderFood(GuiGraphics guiGraphics, Player player, int top, int right, CallbackInfo ci) {
 		int maxHunger = Mth.floor(player.getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
 		this.granularHungerRandom.setSeed(this.tickCount * 312871L);
-		context.setColor(1f, 1f, 1f, 1f);
+		guiGraphics.setColor(1f, 1f, 1f, 1f);
 		double dt = (Util.getNanos() - previousTime) / 1e9d;
 		FoodData hungerManager = player.getFoodData();
 		int iFoodLevel = hungerManager.getFoodLevel();
 		float fSaturationLevel = hungerManager.getSaturationLevel();
 		int iSaturationPips = (int) ((hungerManager.getSaturationLevel() + 0.124F));
 
-		float foodBarShakeTimer = GranularHungerClient.foodBarShakeTimer;
+		double foodBarShakeTimer = Math.max(GranularHungerClient.foodBarShakeTimer, GranularHungerClient.forcedShakeTime);
 		if (GranularHungerClient.foodBarShakeTimer > 0) {
-			GranularHungerClient.foodBarShakeTimer = (float) Math.max(0d, expDecay(GranularHungerClient.foodBarShakeTimer, 0d, 10d, dt));
+			GranularHungerClient.foodBarShakeTimer = Math.max(0d, expDecay(GranularHungerClient.foodBarShakeTimer, 0d, 10d, dt));
 		}
+		GranularHungerClient.forcedShakeTime -= dt;
 		RenderSystem.enableBlend();
 		for(int j = 0; j < Math.ceilDiv(maxHunger, 6); ++j) {
 			int line = j / 10;
@@ -89,28 +107,29 @@ public abstract class GuiMixin {
 			int l = right - row * 8 - 9;
 			if ((j+1) * 6 > maxHunger) {
 				int pixelOffset = (maxHunger - (j*6));
-				context.blitSprite(identifier, 9, 9, 7-pixelOffset, 0, l + (7-pixelOffset), k, pixelOffset+2, 9);
+				guiGraphics.blitSprite(identifier, 9, 9, 7-pixelOffset, 0, l + (7-pixelOffset), k, pixelOffset+2, 9);
 			}
 			else {
-				context.blitSprite(identifier, l, k, 9, 9);
+				guiGraphics.blitSprite(identifier, l, k, 9, 9);
 			}
 			if (j * 6 < iSaturationPips) {
 				int pixelOffset = Math.max(0, partialSaturationPips);
-				context.blitSprite(identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
+				guiGraphics.blitSprite(identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
 			}
 			if (j * 6 < iFoodLevel) {
 				int pixelOffset = Math.max(0, partialHungerPips) + 1;
 				if (pixelOffset == 1) pixelOffset = 2;
 
-				context.blitSprite(identifier2, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
+				guiGraphics.blitSprite(identifier2, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
 			}
 		}
 		RenderSystem.disableBlend();
-		renderOverlay(instance, context, player, top, right, maxHunger, foodBarShakeTimer);
+		renderOverlay(guiGraphics, player, top, right, maxHunger, foodBarShakeTimer);
 		previousTime = Util.getNanos();
+		ci.cancel();
 	}
 	@Unique
-	private void renderOverlay(Gui guiInstance, GuiGraphics context, Player player, int top, int right, int maxHunger, float foodBarShakeTimer) {
+	private void renderOverlay(GuiGraphics context, Player player, int top, int right, int maxHunger, double foodBarShakeTimer) {
 
 		ItemStack item = player.getMainHandItem();
 		var foodComponent = item.get(DataComponents.FOOD);
@@ -165,13 +184,6 @@ public abstract class GuiMixin {
 			}
 
 			int l = right - row * 8 - 9;
-//			if ((i+1) * 6 > maxHunger) {
-//				int pixelOffset = (maxHunger - (i*6));
-//				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier, 9, 9, 7-pixelOffset, 0, l + (7-pixelOffset), k, pixelOffset+2, 9, alphaColor);
-//			}
-//			else {
-//				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier, l, k, 9, 9, alphaColor);
-//			}
 			if (i * 6 < modifiedSaturation) {
 				int pixelOffset = Math.max(0, partialSaturationPips);
 				context.blitSprite(identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);

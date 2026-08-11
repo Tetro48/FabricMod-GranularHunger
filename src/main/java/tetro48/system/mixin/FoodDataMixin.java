@@ -56,7 +56,9 @@ public abstract class FoodDataMixin {
 		foodLevel = Math.min(foodLevel, maxFoodLevel);
 		saturationLevel = Math.min(saturationLevel, maxFoodLevel);
 		hungerCostMultiplier = player.getAttributeValue(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
-		ServerPlayNetworking.send((ServerPlayer) player, new ExhaustionUpdatePacket(exhaustionLevel - previousExhaustion));
+		if (exhaustionLevel != previousExhaustion) {
+			ServerPlayNetworking.send((ServerPlayer) player, new ExhaustionUpdatePacket(exhaustionLevel - previousExhaustion));
+		}
 		boolean doesFatBurn = Math.ceil(foodLevel/6f) < saturationLevel/6f;
 		while (exhaustionLevel > ONE_AND_ONE_THIRD || (doesFatBurn && exhaustionLevel > 0.5f)) {
 			doesFatBurn = Math.ceil(foodLevel/6f) < saturationLevel/6f;
