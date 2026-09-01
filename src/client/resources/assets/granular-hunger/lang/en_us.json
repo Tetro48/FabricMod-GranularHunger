@@ -1,4 +1,16 @@
 {
   "attribute.name.granular_hunger.hunger_cost": "Hunger Cost",
-  "attribute.name.granular_hunger.max_hunger": "Max Hunger Points"
+  "attribute.name.granular_hunger.max_hunger": "Max Hunger Points",
+  "granular_hunger.config.system": "System",
+  "granular_hunger.config.system.description": "The Hunger System Configuration. Not shown when in dedicated server.",
+  "granular_hunger.config.system.behavior_mode": "Behavior Mode",
+  "granular_hunger.config.system.behavior_mode.description": "How the Hunger System will behave like.",
+  "granular_hunger.config.system.behavior_mode.btw_mode": "BTW style",
+  "granular_hunger.config.system.behavior_mode.vanilla_mode": "Vanilla-like",
+  "granular_hunger.config.visuals": "Visuals",
+  "granular_hunger.config.visuals.description": "The look of the hunger bar! Also config UI",
+  "granular_hunger.config.visuals.fill_overlay": "Show Fill Overlay",
+  "granular_hunger.config.visuals.fill_overlay.description": "Shows the amount restored when you're holding food.",
+  "granular_hunger.config.visuals.fat_color": "Fat Roll Color",
+  "granular_hunger.config.visuals.config_backend": "Config Backend"
 }

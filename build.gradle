@@ -31,6 +31,19 @@ repositories {
 			includeGroup "net.azureaaron"
 		}
 	}
+
+	exclusiveContent {
+		forRepository {
+			maven {
+				name = "Modrinth"
+				url = "https://api.modrinth.com/maven"
+			}
+		}
+
+		filter {
+			includeGroup "maven.modrinth"
+		}
+	}
 	// Add repositories to retrieve artifacts from in here.
 	// You should only use this when depending on other mods because
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
@@ -41,7 +54,7 @@ repositories {
 loom {
 	splitEnvironmentSourceSets()
 
-	accessWidenerPath = file("src/main/resources/granular-hunger.accesswidener")
+	accessWidenerPath = file("src/main/resources/granular_hunger.accesswidener")
 
 	mods {
 		"granular-hunger" {
@@ -61,6 +74,14 @@ dependencies {
 
 	// Dandelion (also shades in MoulConfig)
 	include implementation("net.azureaaron:dandelion:${project.dandelion_version}")
+
+	// YACL
+	include implementation("dev.isxander:yet-another-config-lib:${project.yacl_version}-fabric")
+
+	// Mod Menu
+	// implementation "com.terraformersmc:modmenu:${project.mod_menu_version}"
+	// temporary until their maven is fixed
+	implementation "maven.modrinth:modmenu:${project.mod_menu_version}"
 
 	// Fabric Language Kotlin for using MoulConfig
 	implementation("net.fabricmc:fabric-language-kotlin:${project.flk_version}")

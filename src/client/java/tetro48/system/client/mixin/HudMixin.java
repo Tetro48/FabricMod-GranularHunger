@@ -1,6 +1,5 @@
 package tetro48.system.client.mixin;
 
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.Hud;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -10,19 +9,26 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.Util;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
 import net.minecraft.world.item.ItemStack;
+import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tetro48.system.GranularHunger;
+import tetro48.system.HungerSystemBehaviorMode;
 import tetro48.system.client.GranularHungerClient;
+import tetro48.system.client.config.GranularHungerClientConfigManager;
+import tetro48.system.configs.HungerDisplayConfig;
+
+import java.util.function.Supplier;
 
 @Mixin(Hud.class)
 public abstract class HudMixin {
@@ -39,8 +45,22 @@ public abstract class HudMixin {
 
 	@Shadow @Final private static Identifier FOOD_FULL_HUNGER_SPRITE;
 
+	@Shadow
+	@Nullable
+	protected abstract Player getCameraPlayer();
+
+	@Shadow
+	@Nullable
+	protected abstract LivingEntity getPlayerVehicleWithHealth();
+
+	@Shadow
+	protected abstract int getVehicleMaxHearts(@Nullable LivingEntity vehicle);
+
 	@Unique
 	private RandomSource granularHungerRandom = RandomSource.create();
+
+	@Unique
+	private static final Supplier<HungerDisplayConfig> CONFIG = () -> GranularHungerClientConfigManager.get().hungerDisplay;
 
 	@Unique
 	private long previousTime;
@@ -49,9 +69,29 @@ public abstract class HudMixin {
 		return b + (a - b) * Math.exp(-decay * dt);
 	}
 
+	@ModifyArg(method = "extractPlayerHealth", index = 2, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Hud;extractAirBubbles(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/world/entity/player/Player;III)V"))
+	private int offsetAccordingly(int constant) {
+		LivingEntity vehicleWithHearts = this.getPlayerVehicleWithHealth();
+		int vehicleHearts = this.getVehicleMaxHearts(vehicleWithHearts);
+		if (vehicleHearts != 0) {
+			return constant;
+		}
+		Player playerEntity = this.getCameraPlayer();
+		int maxHunger = 60;
+		if (playerEntity != null) {
+			maxHunger = Mth.floor(this.getCameraPlayer().getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
+		}
+		int lines = Math.ceilDiv(maxHunger, 60) - 1;
+		int offset = Math.max(10-lines, 4);
+		return constant - (lines * offset);
+	}
+
 	@Inject(method = "extractFood", at = @At("HEAD"), cancellable = true)
 	private void modifyRenderFood(final GuiGraphicsExtractor context, final Player player, final int top, final int right, CallbackInfo ci) {
 		int maxHunger = Mth.floor(player.getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
+		if (granularHungerRandom == null) {
+			granularHungerRandom = RandomSource.create(); // just in case
+		}
 		this.granularHungerRandom.setSeed(this.tickCount * 312871L);
 		double dt = (Util.getNanos() - previousTime) / 1e9d;
 		FoodData hungerManager = player.getFoodData();
@@ -59,10 +99,13 @@ public abstract class HudMixin {
 		float fSaturationLevel = hungerManager.getSaturationLevel();
 		int iSaturationPips = (int) ((hungerManager.getSaturationLevel() + 0.124F));
 
-		float foodBarShakeTimer = GranularHungerClient.foodBarShakeTimer;
+		int fatColor = CONFIG.get().fatColor.getRGB();
+
+		double foodBarShakeTimer = Math.max(GranularHungerClient.foodBarShakeTimer, GranularHungerClient.forcedShakeTime);
 		if (GranularHungerClient.foodBarShakeTimer > 0) {
-			GranularHungerClient.foodBarShakeTimer = (float) Math.max(0d, expDecay(GranularHungerClient.foodBarShakeTimer, 0d, 10d, dt));
+			GranularHungerClient.foodBarShakeTimer = Math.max(0d, expDecay(GranularHungerClient.foodBarShakeTimer, 0d, 10d, dt));
 		}
+		GranularHungerClient.forcedShakeTime -= dt;
 		for(int j = 0; j < Math.ceilDiv(maxHunger, 6); ++j) {
 			int line = j / 10;
 			int row = j % 10;
@@ -97,7 +140,7 @@ public abstract class HudMixin {
 			}
 			if (j * 6 < iSaturationPips) {
 				int pixelOffset = Math.max(0, partialSaturationPips);
-				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
+				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9, fatColor);
 			}
 			if (j * 6 < iFoodLevel) {
 				int pixelOffset = Math.max(0, partialHungerPips) + 1;
@@ -106,24 +149,26 @@ public abstract class HudMixin {
 				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier2, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
 			}
 		}
-		renderOverlay(context, player, top, right, maxHunger, foodBarShakeTimer);
+		if (CONFIG.get().displayOverlay) {
+			renderOverlay(context, player, top, right, maxHunger, foodBarShakeTimer);
+		}
 		previousTime = Util.getNanos();
 		ci.cancel();
 	}
 	@Unique
-	private void renderOverlay(GuiGraphicsExtractor context, Player player, int top, int right, int maxHunger, float foodBarShakeTimer) {
+	private void renderOverlay(GuiGraphicsExtractor context, Player player, int top, int right, int maxHunger, double foodBarShakeTimer) {
 
 		ItemStack item = player.getMainHandItem();
 		var foodComponent = item.get(DataComponents.FOOD);
 		int hungerPips = item.getOrDefault(GranularHunger.HUNGER_PIP_COMPONENT, 0);
-		if (foodComponent == null || (foodComponent.nutrition() <= 0 && hungerPips <= 0))
+		if (foodComponent == null)
 			return;
 
 		int foodLevel = player.getFoodData().getFoodLevel();
 		float saturationLevel = player.getFoodData().getSaturationLevel();
-		int hungerRestored = foodComponent.nutrition() * 3 + item.getOrDefault(GranularHunger.HUNGER_PIP_COMPONENT, 0);
+		int hungerRestored = foodComponent.nutrition() * 3 + hungerPips;
 		float saturationRestored = foodComponent.saturation() * 3;
-		if (player.hasEffect(MobEffects.HUNGER)) {
+		if (player.hasEffect(MobEffects.HUNGER) || (foodLevel == maxHunger && !foodComponent.canAlwaysEat())) {
 			return;
 		}
 		this.granularHungerRandom.setSeed(this.tickCount * 312871L);
@@ -140,12 +185,17 @@ public abstract class HudMixin {
 			identifier2 = FOOD_FULL_SPRITE;
 		}
 		int alphaColor = 0x00_FFFFFF;
+		int fatColorWithAlpha = CONFIG.get().fatColor.getRGB() & 0x00_FFFFFF;
 
 		alphaColor |= (int)Math.abs(Math.sin(Util.getNanos() / 4e8d) * 192) << 24;
+		fatColorWithAlpha |= (int)Math.abs(Math.sin(Util.getNanos() / 4e8d) * 192) << 24;
 
 		int modifiedFood = Math.clamp(foodLevel + hungerRestored, 0, maxHunger);
-		float modifiedSaturation = Math.clamp(saturationLevel + saturationRestored - GranularHunger.getSaturationReduction(foodLevel, maxHunger, hungerRestored, saturationRestored), 0, maxHunger);
+		float modifiedSaturation = Math.clamp(saturationLevel + saturationRestored - GranularHungerClient.getSaturationReduction(foodLevel, maxHunger, hungerRestored, saturationRestored), 0, maxHunger);
 
+		if (GranularHungerClient.hungerBehavior == HungerSystemBehaviorMode.VANILLA_MODE) {
+			modifiedSaturation = Math.clamp(modifiedSaturation, 0, modifiedFood);
+		}
 		int startFoodBars = (int) Math.min(Math.max(0, foodLevel / 6), Math.max(0, saturationLevel / 6f));
 		int endFoodBars = (int) Math.min(Math.ceilDiv(maxHunger, 6), Math.max(Math.ceil(modifiedFood / 6.0F), Math.ceil(modifiedSaturation / 6.0F)));
 
@@ -176,7 +226,7 @@ public abstract class HudMixin {
 //			}
 			if (i * 6 < modifiedSaturation) {
 				int pixelOffset = Math.max(0, partialSaturationPips);
-				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9, alphaColor);
+				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9, fatColorWithAlpha);
 			}
 			if (i * 6 < modifiedFood) {
 				int pixelOffset = Math.max(0, partialHungerPips) + 1;

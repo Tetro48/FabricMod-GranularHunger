@@ -12,21 +12,24 @@
 		"sources": "https://github.com/Tetro48/FabricMod-GranularHunger"
 	},
 	"license": "CC0-1.0",
-	"icon": "assets/granular-hunger/icon.png",
+	"icon": "assets/granular_hunger/icon.png",
 	"environment": "*",
-	"accessWidener": "granular-hunger.accesswidener",
+	"accessWidener": "granular_hunger.accesswidener",
 	"entrypoints": {
 		"main": [
 			"tetro48.system.GranularHunger"
 		],
 		"client": [
 			"tetro48.system.client.GranularHungerClient"
+		],
+		"modmenu": [
+			"tetro48.system.client.compat.modmenu.ModMenuEntry"
 		]
 	},
 	"mixins": [
-		"granular-hunger.mixins.json",
+		"granular_hunger.mixins.json",
 		{
-			"config": "granular-hunger.client.mixins.json",
+			"config": "granular_hunger.client.mixins.json",
 			"environment": "client"
 		}
 	],

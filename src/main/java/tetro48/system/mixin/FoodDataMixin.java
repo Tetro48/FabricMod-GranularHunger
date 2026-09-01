@@ -1,13 +1,11 @@
 package tetro48.system.mixin;
 
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.storage.ValueInput;
@@ -20,6 +18,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tetro48.system.ExhaustionUpdatePacket;
 import tetro48.system.GranularHunger;
+import tetro48.system.HungerBehaviorUpdatePacket;
+import tetro48.system.HungerSystemBehaviorMode;
+import tetro48.system.configs.GranularHungerConfigManager;
+import tetro48.system.configs.HungerSystemConfig;
+
+import java.util.function.Supplier;
 
 @Mixin(FoodData.class)
 public abstract class FoodDataMixin {
@@ -35,15 +39,24 @@ public abstract class FoodDataMixin {
 
 	@Shadow public abstract int getFoodLevel();
 
+	@Shadow
+	public abstract void addExhaustion(float amount);
+
 	@Unique private boolean isGranular;
 	@Unique private static final float ONE_AND_ONE_THIRD = 4f/3f;
-	@Unique private final float[] healTimeMultiplier = {0.4f, 0.6f, 1f, 1f};
 	@Unique private int maxFoodLevel = 60;
 	@Unique private double hungerCostMultiplier = 1d;
 
+	@Unique private HungerSystemBehaviorMode previousBehaviorMode = null;
+
+	@Unique
+	private static final Supplier<HungerSystemConfig> CONFIG = () -> GranularHungerConfigManager.get().hungerSystem;
+
 	@Inject(method = "<init>", at = @At("TAIL"))
 	private void onInit(CallbackInfo ci) {
-		saturationLevel = 0f;
+		if (CONFIG.get().behaviorMode == HungerSystemBehaviorMode.BTW_MODE) {
+			saturationLevel = 0f;
+		}
 	}
 
 	@Inject(method = "needsFood", at = @At("RETURN"), cancellable = true)
@@ -76,43 +89,91 @@ public abstract class FoodDataMixin {
 		return doesFatBurn;
 	}
 
+	@Unique
+	private boolean burnInVanillaStyle() {
+		if (saturationLevel > 0) {
+			float saturationReduce = 1 / ONE_AND_ONE_THIRD;
+			if (saturationReduce > saturationLevel) {
+				exhaustionLevel = (saturationReduce - saturationLevel) * ONE_AND_ONE_THIRD;
+				saturationLevel = 0;
+			}
+			else {
+				saturationLevel -= saturationReduce;
+				exhaustionLevel -= 1;
+			}
+		}
+		else {
+			exhaustionLevel -= ONE_AND_ONE_THIRD;
+			this.foodLevel = Math.max(this.foodLevel - 1, 0);
+		}
+		return exhaustionLevel >= ONE_AND_ONE_THIRD;
+	}
+
 	@Inject(method = "tick", at = @At("HEAD"), cancellable = true)
-	private void newUpdate(ServerPlayer serverPlayer, CallbackInfo ci) {
-		ServerLevel level = serverPlayer.level();
+	private void newUpdate(ServerPlayer player, CallbackInfo ci) {
+		HungerSystemBehaviorMode behaviorMode = CONFIG.get().behaviorMode;
+		ServerLevel level = player.level();
 		Difficulty difficulty = level.getDifficulty();
 		if (!isGranular) {
 			isGranular = true;
 			foodLevel *= 3;
 			saturationLevel *= 3;
 		}
-		maxFoodLevel = Mth.floor(serverPlayer.getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
+		maxFoodLevel = Mth.floor(player.getAttributeValue(GranularHunger.MAX_HUNGER_ATTRIBUTE));
 		foodLevel = Math.min(foodLevel, maxFoodLevel);
 		saturationLevel = Math.min(saturationLevel, maxFoodLevel);
-		hungerCostMultiplier = serverPlayer.getAttributeValue(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
-		ServerPlayNetworking.send(serverPlayer, new ExhaustionUpdatePacket(exhaustionLevel - previousExhaustion));
-//		switch ()
-		burnInBTWStyle();
+		hungerCostMultiplier = player.getAttributeValue(GranularHunger.HUNGER_COST_MULTIPLIER_ATTRIBUTE);
+		if (previousBehaviorMode != behaviorMode) {
+			previousBehaviorMode = behaviorMode;
+			ServerPlayNetworking.send(player, new HungerBehaviorUpdatePacket(behaviorMode.name()));
+		}
+		if (exhaustionLevel != previousExhaustion) {
+			ServerPlayNetworking.send(player, new ExhaustionUpdatePacket(exhaustionLevel - previousExhaustion));
+		}
+		while (exhaustionLevel > ONE_AND_ONE_THIRD && switch (behaviorMode) {
+			case BTW_MODE -> burnInBTWStyle();
+			case VANILLA_MODE -> burnInVanillaStyle();
+		});
 		if (saturationLevel != previousSaturationLevel) {
-			serverPlayer.connection.send(new ClientboundSetHealthPacket(serverPlayer.getHealth(), this.foodLevel, this.saturationLevel));
+			player.connection.send(new ClientboundSetHealthPacket(player.getHealth(), this.foodLevel, this.saturationLevel));
 			previousSaturationLevel = saturationLevel;
 		}
 		previousExhaustion = exhaustionLevel;
-		boolean bl = serverPlayer.level().getGameRules().get(GameRules.NATURAL_HEALTH_REGENERATION);
-		if (bl && serverPlayer.isHurt() && this.foodLevel > 24) {
-			++this.tickTimer;
-			if (this.tickTimer >= 400 * healTimeMultiplier[difficulty.getId()]) {
-				serverPlayer.heal(1f);
-				this.tickTimer = 0;
+		boolean naturalRegen = player.level().getGameRules().get(GameRules.NATURAL_HEALTH_REGENERATION);
+		if (behaviorMode == HungerSystemBehaviorMode.BTW_MODE) {
+			if (naturalRegen && player.isHurt() && this.foodLevel > 24) {
+				++this.tickTimer;
+				if (this.tickTimer >= GranularHunger.getTicksUntilHeal(level)) {
+					player.heal(1f);
+					this.tickTimer = 0;
+				}
+			}
+		} else if (behaviorMode == HungerSystemBehaviorMode.VANILLA_MODE) {
+			if (naturalRegen && this.saturationLevel > 0.0F && player.isHurt() && this.foodLevel >= maxFoodLevel) {
+				++this.tickTimer;
+				if (this.tickTimer >= 10) {
+					float saturationSpent = Math.min(this.saturationLevel, 6.0F);
+					player.heal(saturationSpent / 6.0F);
+					this.addExhaustion(saturationSpent);
+					this.tickTimer = 0;
+				}
+			} else if (naturalRegen && this.foodLevel >= maxFoodLevel * 0.9d && player.isHurt()) {
+				++this.tickTimer;
+				if (this.tickTimer >= 80) {
+					player.heal(1.0F);
+					this.addExhaustion(6.0F);
+					this.tickTimer = 0;
+				}
 			}
 		}
-		else if (this.foodLevel == 0 && this.saturationLevel <= 0) {
+		if (this.foodLevel == 0 && this.saturationLevel <= 0) {
 			++this.tickTimer;
 			if (this.tickTimer >= 80) {
-				serverPlayer.hurtServer(level, serverPlayer.damageSources().starve(), 1.0F);
+				player.hurtServer(level, player.damageSources().starve(), 1.0F);
 				this.tickTimer = 0;
 			}
 		}
-		else {
+		else if (!naturalRegen || !player.isHurt()) {
 			this.tickTimer = 0;
 		}
 		ci.cancel();
@@ -133,6 +194,9 @@ public abstract class FoodDataMixin {
 	}
 	@ModifyArg(method = "add", index = 2, at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;clamp(FFF)F"))
 	private float noWastingSaturation(float value) {
+		if (CONFIG.get().behaviorMode == HungerSystemBehaviorMode.VANILLA_MODE) {
+			return value;
+		}
 		return maxFoodLevel;
 	}
 	@Inject(method = "addExhaustion", at = @At("HEAD"), cancellable = true)
@@ -141,12 +205,13 @@ public abstract class FoodDataMixin {
 		ci.cancel();
 	}
 	@Inject(method = "add", at = @At("HEAD"))
-	private void modifySaturationGain(int nutrition, float saturation, CallbackInfo ci) {
-		if (nutrition <= 0) {
+	private void modifySaturationGain(int food, float saturation, CallbackInfo ci) {
+		if (CONFIG.get().behaviorMode != HungerSystemBehaviorMode.BTW_MODE) return;
+		if (food <= 0) {
 			if (this.foodLevel < maxFoodLevel) saturationLevel -= saturation;
 			return;
 		}
-		float saturationReduction = GranularHunger.getSaturationReduction(foodLevel, maxFoodLevel, nutrition, saturation);
+		float saturationReduction = GranularHunger.getSaturationReduction(foodLevel, maxFoodLevel, food, saturation);
 		saturationLevel = Math.max(-saturationReduction, saturationLevel - saturationReduction);
 	}
 	@ModifyArg(method = "eat(Lnet/minecraft/world/food/FoodProperties;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;add(IF)V"), index = 0)
