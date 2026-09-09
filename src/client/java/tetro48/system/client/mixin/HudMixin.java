@@ -99,19 +99,45 @@ public abstract class HudMixin {
 		float fSaturationLevel = hungerManager.getSaturationLevel();
 		int iSaturationPips = (int) ((hungerManager.getSaturationLevel() + 0.124F));
 
+		ItemStack item = player.getMainHandItem();
+		var foodComponent = item.get(DataComponents.FOOD);
+		int hungerPips = item.getOrDefault(GranularHunger.HUNGER_PIP_COMPONENT, 0);
+
+		int hungerRestored = 0;
+		float saturationRestored = 0;
+
+		// Display Overlay setting now deals with this, and it's an elegant solution, considering the overlay is now weaved in.
+		if (CONFIG.get().displayOverlay && foodComponent != null && !player.hasEffect(MobEffects.HUNGER) && (iFoodLevel != maxHunger || foodComponent.canAlwaysEat())) {
+			hungerRestored = foodComponent.nutrition() * 3 + hungerPips;
+			saturationRestored = foodComponent.saturation() * 3;
+		}
+
 		int fatColor = CONFIG.get().fatColor.getRGB();
+		int alphaColor = 0x00_FFFFFF;
+		int fatColorWithAlpha = fatColor & 0x00_FFFFFF;
+
+		alphaColor |= (int)Math.abs(Math.sin(Util.getNanos() / 4e8d) * 192) << 24;
+		fatColorWithAlpha |= (int)Math.abs(Math.sin(Util.getNanos() / 4e8d) * 192) << 24;
 
 		double foodBarShakeTimer = Math.max(GranularHungerClient.foodBarShakeTimer, GranularHungerClient.forcedShakeTime);
 		if (GranularHungerClient.foodBarShakeTimer > 0) {
 			GranularHungerClient.foodBarShakeTimer = Math.max(0d, expDecay(GranularHungerClient.foodBarShakeTimer, 0d, 10d, dt));
 		}
+		if (!CONFIG.get().hungerShakeOnExhaustion) {
+			foodBarShakeTimer = 0;
+		}
 		GranularHungerClient.forcedShakeTime -= dt;
+		int overlayFood = Math.clamp(iFoodLevel + hungerRestored, 0, maxHunger);
+		float overlaySaturation = Math.clamp(fSaturationLevel + saturationRestored - GranularHungerClient.getSaturationReduction(iFoodLevel, maxHunger, hungerRestored, saturationRestored), 0, maxHunger);
+
 		for(int j = 0; j < Math.ceilDiv(maxHunger, 6); ++j) {
 			int line = j / 10;
 			int row = j % 10;
 			int lines = Math.ceilDiv(maxHunger, 60);
 			int partialHungerPips = Math.min(6, iFoodLevel - j * 6);
 			int partialSaturationPips = (int) Math.min(8, ((fSaturationLevel + 0.124f) / 0.75f) - j * 8f);
+			int overlayPartialHungerPips = Math.min(6, overlayFood - j * 6);
+			int overlayPartialSaturationPips = (int) Math.min(8, ((overlaySaturation + 0.124f) / 0.75f) - j * 8f);
 			int k = top - line * Math.max(11-lines, 4);
 			Identifier identifier;
 			Identifier identifier1;
@@ -142,98 +168,24 @@ public abstract class HudMixin {
 				int pixelOffset = Math.max(0, partialSaturationPips);
 				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9, fatColor);
 			}
+			if (j * 6 < overlaySaturation && overlayPartialSaturationPips > partialSaturationPips) {
+				int pixelOffset = Math.max(0, overlayPartialSaturationPips);
+				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9, fatColorWithAlpha);
+			}
 			if (j * 6 < iFoodLevel) {
 				int pixelOffset = Math.max(0, partialHungerPips) + 1;
 				if (pixelOffset == 1) pixelOffset = 2;
 
 				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier2, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9);
 			}
-		}
-		if (CONFIG.get().displayOverlay) {
-			renderOverlay(context, player, top, right, maxHunger, foodBarShakeTimer);
-		}
-		previousTime = Util.getNanos();
-		ci.cancel();
-	}
-	@Unique
-	private void renderOverlay(GuiGraphicsExtractor context, Player player, int top, int right, int maxHunger, double foodBarShakeTimer) {
-
-		ItemStack item = player.getMainHandItem();
-		var foodComponent = item.get(DataComponents.FOOD);
-		int hungerPips = item.getOrDefault(GranularHunger.HUNGER_PIP_COMPONENT, 0);
-		if (foodComponent == null)
-			return;
-
-		int foodLevel = player.getFoodData().getFoodLevel();
-		float saturationLevel = player.getFoodData().getSaturationLevel();
-		int hungerRestored = foodComponent.nutrition() * 3 + hungerPips;
-		float saturationRestored = foodComponent.saturation() * 3;
-		if (player.hasEffect(MobEffects.HUNGER) || (foodLevel == maxHunger && !foodComponent.canAlwaysEat())) {
-			return;
-		}
-		this.granularHungerRandom.setSeed(this.tickCount * 312871L);
-		Identifier identifier;
-		Identifier identifier1;
-		Identifier identifier2;
-		if (player.hasEffect(MobEffects.HUNGER)) {
-			identifier = FOOD_EMPTY_HUNGER_SPRITE;
-			identifier1 = FOOD_FAT_OUTLINE;
-			identifier2 = FOOD_FULL_HUNGER_SPRITE;
-		} else {
-			identifier = FOOD_EMPTY_SPRITE;
-			identifier1 = FOOD_FAT_OUTLINE;
-			identifier2 = FOOD_FULL_SPRITE;
-		}
-		int alphaColor = 0x00_FFFFFF;
-		int fatColorWithAlpha = CONFIG.get().fatColor.getRGB() & 0x00_FFFFFF;
-
-		alphaColor |= (int)Math.abs(Math.sin(Util.getNanos() / 4e8d) * 192) << 24;
-		fatColorWithAlpha |= (int)Math.abs(Math.sin(Util.getNanos() / 4e8d) * 192) << 24;
-
-		int modifiedFood = Math.clamp(foodLevel + hungerRestored, 0, maxHunger);
-		float modifiedSaturation = Math.clamp(saturationLevel + saturationRestored - GranularHungerClient.getSaturationReduction(foodLevel, maxHunger, hungerRestored, saturationRestored), 0, maxHunger);
-
-		if (GranularHungerClient.hungerBehavior == HungerSystemBehaviorMode.VANILLA_MODE) {
-			modifiedSaturation = Math.clamp(modifiedSaturation, 0, modifiedFood);
-		}
-		int startFoodBars = (int) Math.min(Math.max(0, foodLevel / 6), Math.max(0, saturationLevel / 6f));
-		int endFoodBars = (int) Math.min(Math.ceilDiv(maxHunger, 6), Math.max(Math.ceil(modifiedFood / 6.0F), Math.ceil(modifiedSaturation / 6.0F)));
-
-		int iconSize = 9;
-
-		granularHungerRandom.consumeCount(startFoodBars);
-//		context.drawCenteredString(guiInstance.getFont(), String.format("debug: sat.:%f, sat. red:%f, sat.res:%f", saturationLevel, GranularHunger.getSaturationReduction(foodLevel, maxHunger, hungerRestored, saturationRestored), saturationRestored), top, right, 0xffffffff);
-		for (int i = startFoodBars; i < endFoodBars; ++i)
-		{
-			int line = i / 10;
-			int row = i % 10;
-			int lines = Math.ceilDiv(maxHunger, 60);
-			int partialHungerPips = Math.min(6, modifiedFood - i * 6);
-			int partialSaturationPips = (int) Math.min(8, ((modifiedSaturation + 0.124f) / 0.75f) - i * 8f);
-			int k = top - line * Math.max(11-lines, 4);
-
-			if (foodBarShakeTimer > 0.001 || (this.tickCount % (foodLevel + 1) == 0 && foodLevel < maxHunger / 2)) {
-				k += (this.granularHungerRandom.nextInt(3) - 1);
-			}
-
-			int l = right - row * 8 - 9;
-//			if ((i+1) * 6 > maxHunger) {
-//				int pixelOffset = (maxHunger - (i*6));
-//				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier, 9, 9, 7-pixelOffset, 0, l + (7-pixelOffset), k, pixelOffset+2, 9, alphaColor);
-//			}
-//			else {
-//				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier, l, k, 9, 9, alphaColor);
-//			}
-			if (i * 6 < modifiedSaturation) {
-				int pixelOffset = Math.max(0, partialSaturationPips);
-				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier1, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9, fatColorWithAlpha);
-			}
-			if (i * 6 < modifiedFood) {
-				int pixelOffset = Math.max(0, partialHungerPips) + 1;
+			if (j * 6 < overlayFood && overlayPartialHungerPips > partialHungerPips) {
+				int pixelOffset = Math.max(0, overlayPartialHungerPips) + 1;
 				if (pixelOffset == 1) pixelOffset = 2;
 
 				context.blitSprite(RenderPipelines.GUI_TEXTURED, identifier2, 9, 9, 8-pixelOffset, 0, l + (8-pixelOffset), k, pixelOffset+1, 9, alphaColor);
 			}
 		}
+		previousTime = Util.getNanos();
+		ci.cancel();
 	}
 }

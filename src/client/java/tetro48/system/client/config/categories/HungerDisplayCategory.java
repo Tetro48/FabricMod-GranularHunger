@@ -34,6 +34,15 @@ public class HungerDisplayCategory {
 						.controller(ConfigUtils.createBooleanController())
 						.build()
 				)
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.translatable("granular_hunger.config.visuals.hunger_bar_shake_on_exhaustion"))
+						.description(Component.translatable("granular_hunger.config.visuals.hunger_bar_shake_on_exhaustion.description"))
+						.binding(defaults.hungerDisplay.hungerShakeOnExhaustion,
+								() -> config.hungerDisplay.hungerShakeOnExhaustion,
+								showOverlay -> config.hungerDisplay.hungerShakeOnExhaustion = showOverlay)
+						.controller(ConfigUtils.createBooleanController())
+						.build()
+				)
 
 				.option(Option.<ConfigType>createBuilder()
 						.name(Component.translatable("granular_hunger.config.visuals.config_backend"))
