@@ -3,7 +3,7 @@
 	"id": "granular_hunger",
 	"version": "${version}",
 	"name": "Granular Hunger",
-	"description": "This mod changes the entire hunger system to be more granular, and ports some features from BTW's Hardcore Hunger.",
+	"description": "Granularizes the entire hunger system, and makes it configurable.",
 	"authors": [
 		"Tetro48"
 	],
