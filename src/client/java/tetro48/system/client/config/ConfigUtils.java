@@ -1,8 +1,6 @@
 package tetro48.system.client.config;
 
-import net.azureaaron.dandelion.api.controllers.BooleanController;
-import net.azureaaron.dandelion.api.controllers.ColourController;
-import net.azureaaron.dandelion.api.controllers.EnumController;
+import net.azureaaron.dandelion.api.controllers.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.StringUtils;
@@ -22,6 +20,23 @@ public class ConfigUtils {
 	public static ColourController createColourController(boolean hasAlpha) {
 		return ColourController.createBuilder()
 				.hasAlpha(hasAlpha)
+				.build();
+	}
+
+	public static NumberController<Float> createFloatController() {
+		return FloatController.createBuilder()
+				.build();
+	}
+	public static NumberController<Float> createFloatController(float min) {
+		return FloatController.createBuilder()
+				.min(min)
+				.build();
+	}
+
+	public static NumberController<Float> createFloatSliderController(float min, float max, float step) {
+		return FloatController.createBuilder()
+				.range(min, max)
+				.slider(step)
 				.build();
 	}
 
