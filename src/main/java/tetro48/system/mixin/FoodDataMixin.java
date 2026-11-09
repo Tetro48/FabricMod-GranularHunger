@@ -142,7 +142,7 @@ public abstract class FoodDataMixin {
 		previousExhaustion = exhaustionLevel;
 		boolean naturalRegen = player.level().getGameRules().get(GameRules.NATURAL_HEALTH_REGENERATION);
 		if (behaviorMode == HungerSystemBehaviorMode.BTW_MODE) {
-			if (naturalRegen && player.isHurt() && this.foodLevel > maxFoodLevel * CONFIG.get().hungerRatioRegen_BTWMode) {
+			if (naturalRegen && player.isHurt() && this.foodLevel > maxFoodLevel * CONFIG.get().hungerFullnessRatioRegen_BTWMode) {
 				++this.tickTimer;
 				if (this.tickTimer >= GranularHunger.getTicksUntilHeal(level)) {
 					player.heal(1f);
@@ -158,7 +158,7 @@ public abstract class FoodDataMixin {
 					this.addExhaustion(saturationSpent);
 					this.tickTimer = 0;
 				}
-			} else if (naturalRegen && this.foodLevel > maxFoodLevel * CONFIG.get().hungerRatioRegen_VanillaMode && player.isHurt()) {
+			} else if (naturalRegen && this.foodLevel > maxFoodLevel * CONFIG.get().hungerFullnessRatioRegen_VanillaMode && player.isHurt()) {
 				++this.tickTimer;
 				if (this.tickTimer >= 80) {
 					player.heal(1.0F);

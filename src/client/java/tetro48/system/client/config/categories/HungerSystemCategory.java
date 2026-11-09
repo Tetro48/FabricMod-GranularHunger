@@ -1,7 +1,6 @@
 package tetro48.system.client.config.categories;
 
 import net.azureaaron.dandelion.api.ConfigCategory;
-import net.azureaaron.dandelion.api.ConfigType;
 import net.azureaaron.dandelion.api.Option;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -33,20 +32,20 @@ public class HungerSystemCategory {
 						.build()
 				)
 				.option(Option.<Float>createBuilder()
-						.name(Component.translatable("granular_hunger.config.system.hunger_ratio_regen", behaviorModeFormatter.apply(HungerSystemBehaviorMode.BTW_MODE)))
-						.description(Component.translatable("granular_hunger.config.system.hunger_ratio_regen.description"))
-						.binding(defaults.hungerSystem.hungerRatioRegen_BTWMode * 100f,
-								() -> config.hungerSystem.hungerRatioRegen_BTWMode * 100f,
-								ratio -> config.hungerSystem.hungerRatioRegen_BTWMode = ratio / 100f)
+						.name(Component.translatable("granular_hunger.config.system.hunger_fullness_ratio_regen", behaviorModeFormatter.apply(HungerSystemBehaviorMode.BTW_MODE)))
+						.description(Component.translatable("granular_hunger.config.system.hunger_fullness_ratio_regen.description"))
+						.binding(defaults.hungerSystem.hungerFullnessRatioRegen_BTWMode * 100f,
+								() -> config.hungerSystem.hungerFullnessRatioRegen_BTWMode * 100f,
+								ratio -> config.hungerSystem.hungerFullnessRatioRegen_BTWMode = ratio / 100f)
 						.controller(ConfigUtils.createFloatSliderController(0, 100f, 0.1f))
 						.build()
 				)
 				.option(Option.<Float>createBuilder()
-						.name(Component.translatable("granular_hunger.config.system.hunger_ratio_regen", behaviorModeFormatter.apply(HungerSystemBehaviorMode.VANILLA_MODE)))
-						.description(Component.translatable("granular_hunger.config.system.hunger_ratio_regen.description"))
-						.binding(defaults.hungerSystem.hungerRatioRegen_VanillaMode * 100f,
-								() -> config.hungerSystem.hungerRatioRegen_VanillaMode * 100f,
-								ratio -> config.hungerSystem.hungerRatioRegen_VanillaMode = ratio / 100f)
+						.name(Component.translatable("granular_hunger.config.system.hunger_fullness_ratio_regen", behaviorModeFormatter.apply(HungerSystemBehaviorMode.VANILLA_MODE)))
+						.description(Component.translatable("granular_hunger.config.system.hunger_fullness_ratio_regen.description"))
+						.binding(defaults.hungerSystem.hungerFullnessRatioRegen_VanillaMode * 100f,
+								() -> config.hungerSystem.hungerFullnessRatioRegen_VanillaMode * 100f,
+								ratio -> config.hungerSystem.hungerFullnessRatioRegen_VanillaMode = ratio / 100f)
 						.controller(ConfigUtils.createFloatSliderController(0, 100f, 0.1f))
 						.build()
 				)
